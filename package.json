@@ -25,7 +25,11 @@
     "url": "https://github.com/dLobatog/npm2rpm/issues"
   },
   "dependencies": {
-    "commander": "~2.9.0"
+    "commander": "~2.9.0",
+    "colors": "~1.1.2",
+    "request": "~2.73.0",
+    "tmp": "~0.0.28",
+    "tar.gz": "~1.0.5"
   },
   "homepage": "https://github.com/dLobatog/npm2rpm#readme",
   "preferGlobal": true,
