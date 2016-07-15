@@ -1,0 +1,35 @@
+{
+  "name": "npm2rpm",
+  "version": "1.0.0",
+  "description": "Convert npm packages to rpm packages",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dLobatog/npm2rpm.git"
+  },
+  "keywords": [
+    "npm",
+    "rpm",
+    "package",
+    "redhat",
+    "centos",
+    "fedora",
+    "nodejs"
+  ],
+  "author": "Daniel Lobato Garcia <me@daniellobato.me>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/dLobatog/npm2rpm/issues"
+  },
+  "dependencies": {
+    "commander": "~2.9.0"
+  },
+  "homepage": "https://github.com/dLobatog/npm2rpm#readme",
+  "preferGlobal": true,
+  "bin": {
+    "npm2rpm": "bin/npm2rpm.js"
+  }
+}
