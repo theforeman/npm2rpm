@@ -12,67 +12,94 @@ npm2rpm
 .option('-t, --template [template]', "RPM .spec template to use", 'default.n2r')
 .parse(process.argv);
 
-var npm_module = new npmModule(npm2rpm.name, npm2rpm.version);
-var spec_file = fs.readFileSync(npm2rpm.template, { encoding: 'utf8' });
-//console.log(npm_module);
-spec_file = replaceAttribute(spec_file, '\\$NAME', npm2rpm.name);
-spec_file = replaceAttribute(spec_file, '\\$VERSION', npm2rpm.version);
-spec_file = replaceAttribute(spec_file, '\\$RELEASE', npm2rpm.release);
-spec_file = replaceAttribute(spec_file, '\\$LICENSE', npm_module.license);
-spec_file = replaceAttribute(spec_file, '\\$SUMMARY', npm_module.summary);
-spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
-spec_file = replaceAttribute(spec_file, '\\$DESCRIPTION', npm_module.description);
-console.log(spec_file);
+var tar_extract = extractTar(downloadFromNPM(npm2rpm.name, npm2rpm.version));
+tar_extract['stream'].on('error', (error) => {
+	console.log(error);
+})
+tar_extract['stream'].on('finish', (results) => {
+	console.log(' - Finished extracting for '.bold + npm2rpm.name);
+	console.log(' - Reading package.json for '.bold + npm2rpm.name);
+	var package_json = JSON.parse(fs.readFileSync(tar_extract['location'] + '/package/package.json'));
+	console.log(' - Finished reading package.json for '.bold + npm2rpm.name);
+	npm_module_opts = {
+		name: package_json['name'],
+		version: package_json['version'],
+		license: package_json['license'],
+		description: package_json['description'],
+		project_url: package_json['homepage'],
+		dependencies: package_json['dependencies']
+	}
+
+  var npm_module = new npmModule(npm_module_opts);
+  generateSpecFile(npm_module);
+})
+
+// NPM module download
+
+function downloadFromNPM(name, version) {
+	var request = require('request');
+  var url = npmUrl(name, version);
+	console.log(' - Starting npm module download: '.bold + url );
+	return request.get(url);
+}
+
+function extractTar(request_stream) {
+	var targz = require('tar.gz');
+	var tmpDir = createTempDir();
+	var write_stream = targz().createWriteStream(tmpDir);
+	console.log(' - Unpacking in '.bold + tmpDir + ' ...'.bold);
+	return { stream: request_stream.pipe(write_stream), location: tmpDir }
+}
+
+function createTempDir() {
+	var tmp = require('tmp');
+	var tmpDir = tmp.dirSync(
+		{ mode: 6644,
+			prefix: 'npm2rpm-',
+			keep: true });
+	return tmpDir.name;
+}
+
+function npmUrl(name, version) {
+	return 'http://registry.npmjs.org/' + name + '/-/' + name + '-' + version + '.tgz';
+}
+
+function npmModule(opts) {
+	this.name = opts['name'];
+	this.version = opts['version'];
+	this.url = npmUrl(this.name, this.version);
+	this.description = opts['description'];
+	this.summary = this.description.split('.')[0];
+	this.license = opts['license'];
+	this.project_url = opts['homepage'];
+	this.dependencies = opts['dependencies'];
+	this.files_to_copy = '';
+	this.docfiles = '';
+}
+
+// SpecFile creation
 
 function replaceAttribute(data, template_attr, replacement_text) {
 	return data.replace(new RegExp(template_attr, 'g'), replacement_text);
 }
 
-function npmModule(name, version) {
-	this.name = name;
-	this.version = version;
-	this.url = 'http://registry.npmjs.org/' + name + '/-/' + name + '-' + version + '.tgz';
+function listBundledProvides(npm_module) {
+  var providesList = '';
+  for(var dependency in npm_module.dependencies) {
+    console.log('Provides: bundled-npm(' + dependency + ') = ' + npm_module.dependencies[dependency]);
+  }
+  return 'notworking';
+}
 
-	var downloadFromNPM = () => {
-		var request = require('request');
-		console.log('Starting npm module download: ' + this.url);
-		return request.get(this.url);
-	}
-
-	var createTempDir = () => {
-		var tmp = require('tmp');
-		var tmpDir = tmp.dirSync(
-			{ mode: 6644,
-				prefix: 'npm2rpm-',
-				keep: true });
-		this.tmp_dir = tmpDir.name;
-		return tmpDir.name;
-	}
-
-	var tar_stream = extractTar(downloadFromNPM());
-	tar_stream.on('error', (error) => {
-		console.log(error);
-	})
-	tar_stream.on('finish', () => {
-		console.log('Finished extracting for ' + this.name);
-		console.log('Reading package.json for ' + this.name);
-		var package_json = JSON.parse(fs.readFileSync(this.tmp_dir + '/package/package.json'));
-		this.description = package_json['description'];
-		this.summary = this.description.split('\n')[0];
-		this.license = package_json['license'];
-		this.project_url = package_json['homepage']; ;
-		this.dependencies = package_json['dependencies'];
-		this.files_to_copy = '';
-		this.docfiles = '';
-		this.fully_initialized = true;
-		console.log('Finished reading package.json for ' + this.name);
-	})
-
-	function extractTar(request_stream) {
-		var targz = require('tar.gz');
-		var tmpDir = createTempDir();
-		var write_stream = targz().createWriteStream(tmpDir);
-		console.log('Unpacking in ' + tmpDir + ' ...');
-		return request_stream.pipe(write_stream)
-	}
+function generateSpecFile(npm_module) {
+	var spec_file = fs.readFileSync(npm2rpm.template, { encoding: 'utf8' });
+	spec_file = replaceAttribute(spec_file, '\\$NAME', npm_module.name);
+	spec_file = replaceAttribute(spec_file, '\\$VERSION', npm_module.version);
+	spec_file = replaceAttribute(spec_file, '\\$RELEASE', npm2rpm.release);
+	spec_file = replaceAttribute(spec_file, '\\$LICENSE', npm_module.license);
+	spec_file = replaceAttribute(spec_file, '\\$SUMMARY', npm_module.summary);
+	spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
+	spec_file = replaceAttribute(spec_file, '\\$DESCRIPTION', npm_module.description);
+	spec_file = replaceAttribute(spec_file, '\\$PROVIDES', listBundledProvides(npm_module));
+	//console.log(spec_file);
 }
