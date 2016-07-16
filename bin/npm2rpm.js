@@ -75,27 +75,6 @@ function npmModule(opts) {
 	this.project_url = opts['homepage'];
 	this.dependencies = opts['dependencies'];
   this.tmp_location = opts['tmp_location'] + '/package';
-
-	this.install = () => {
-    var shell = require('shelljs');
-    console.log(' - Installing '.bold + this.name + ' in '.bold + this.tmp_location);
-		shell.cd(this.tmp_location);
-		shell.exec('npm install --production', { silent: true });
-  }
-
-  this.dependencies = () => {
-		var ls = require('npm-remote-ls').ls
-		var config = require('npm-remote-ls').config
-
-		config({
-			development: false,
-			optional: false
-		});
-
-		return ls(this.name, this.version, true, function (deps_list) {
-      console.log(deps_list);
-		});
-  }
 }
 
 // SpecFile creation
@@ -105,11 +84,25 @@ function replaceAttribute(data, template_attr, replacement_text) {
 }
 
 function listBundledProvides(npm_module) {
-  var providesList = '';
-  for(var dependency in npm_module.dependencies) {
-    console.log('Provides: bundled-npm(' + dependency + ') = ' + npm_module.dependencies[dependency]);
-  }
-  return 'notworking';
+	var ls = require('npm-remote-ls').ls
+	var config = require('npm-remote-ls').config
+
+	config({
+		development: false,
+		optional: false
+	});
+
+	console.log(' - Fetching flattened list of production dependencies'.bold);
+	ls(npm_module.name, npm_module.version, true, function (deps) {
+		var bundled_provides = deps.map((dependency) => {
+		  // Dependencies come as name@version
+			dependency = dependency.split('@')
+      return 'Provides: bundled-npm(' + dependency[0] + ') = ' + dependency[1];
+		});
+
+    console.log(bundled_provides.join('\n'));
+	});
+ return 'notworking';
 }
 
 function generateSpecFile(npm_module) {
@@ -122,9 +115,5 @@ function generateSpecFile(npm_module) {
 	spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
 	spec_file = replaceAttribute(spec_file, '\\$DESCRIPTION', npm_module.description);
 	spec_file = replaceAttribute(spec_file, '\\$PROVIDES', listBundledProvides(npm_module));
-  //npm_module.install();
-  console.log('printing deps');
-  var deps = npm_module.dependencies();
-  console.log('finished');
 	//console.log(spec_file);
 }
