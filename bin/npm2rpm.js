@@ -27,6 +27,7 @@ tar_extract['stream'].on('finish', (results) => {
 		license: package_json['license'],
 		description: package_json['description'],
 		project_url: package_json['homepage'],
+    tmp_location: tar_extract['location'],
 		dependencies: package_json['dependencies']
 	}
 
@@ -73,8 +74,28 @@ function npmModule(opts) {
 	this.license = opts['license'];
 	this.project_url = opts['homepage'];
 	this.dependencies = opts['dependencies'];
-	this.files_to_copy = '';
-	this.docfiles = '';
+  this.tmp_location = opts['tmp_location'] + '/package';
+
+	this.install = () => {
+    var shell = require('shelljs');
+    console.log(' - Installing '.bold + this.name + ' in '.bold + this.tmp_location);
+		shell.cd(this.tmp_location);
+		shell.exec('npm install --production', { silent: true });
+  }
+
+  this.dependencies = () => {
+		var ls = require('npm-remote-ls').ls
+		var config = require('npm-remote-ls').config
+
+		config({
+			development: false,
+			optional: false
+		});
+
+		return ls(this.name, this.version, true, function (deps_list) {
+      console.log(deps_list);
+		});
+  }
 }
 
 // SpecFile creation
@@ -101,5 +122,9 @@ function generateSpecFile(npm_module) {
 	spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
 	spec_file = replaceAttribute(spec_file, '\\$DESCRIPTION', npm_module.description);
 	spec_file = replaceAttribute(spec_file, '\\$PROVIDES', listBundledProvides(npm_module));
+  //npm_module.install();
+  console.log('printing deps');
+  var deps = npm_module.dependencies();
+  console.log('finished');
 	//console.log(spec_file);
 }
