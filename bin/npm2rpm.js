@@ -72,7 +72,7 @@ function npmModule(opts) {
 	this.description = opts['description'];
 	this.summary = this.description.split('.')[0];
 	this.license = opts['license'];
-	this.project_url = opts['homepage'];
+	this.project_url = opts['project_url'];
 	this.dependencies = opts['dependencies'];
   this.tmp_location = opts['tmp_location'] + '/package';
 }
@@ -83,7 +83,7 @@ function replaceAttribute(data, template_attr, replacement_text) {
 	return data.replace(new RegExp(template_attr, 'g'), replacement_text);
 }
 
-function listBundledProvides(npm_module) {
+function listDependencies(npm_module, callback) {
 	var ls = require('npm-remote-ls').ls
 	var config = require('npm-remote-ls').config
 
@@ -94,15 +94,28 @@ function listBundledProvides(npm_module) {
 
 	console.log(' - Fetching flattened list of production dependencies'.bold);
 	ls(npm_module.name, npm_module.version, true, function (deps) {
-		var bundled_provides = deps.map((dependency) => {
+		var dependencies_array = deps.map((dependency) => {
 		  // Dependencies come as name@version
 			dependency = dependency.split('@')
-      return 'Provides: bundled-npm(' + dependency[0] + ') = ' + dependency[1];
+      return dependency;
 		});
 
-    console.log(bundled_provides.join('\n'));
+    callback(dependencies_array);
 	});
- return 'notworking';
+}
+
+function dependenciesToProvides(deps) {
+	var bundled_provides = deps.map((dependency) => {
+		return 'Provides: bundled-npm(' + dependency[0] + ') = ' + dependency[1];
+	});
+	return bundled_provides.join('\n');
+}
+
+function dependenciesToSources(deps) {
+	var sources = deps.map((dependency, index) => {
+		return 'Source' + (index + 1) + ': ' + npmUrl(dependency[0], dependency[1]);
+	});
+	return sources.join('\n');
 }
 
 function generateSpecFile(npm_module) {
@@ -114,6 +127,9 @@ function generateSpecFile(npm_module) {
 	spec_file = replaceAttribute(spec_file, '\\$SUMMARY', npm_module.summary);
 	spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
 	spec_file = replaceAttribute(spec_file, '\\$DESCRIPTION', npm_module.description);
-	spec_file = replaceAttribute(spec_file, '\\$PROVIDES', listBundledProvides(npm_module));
-	//console.log(spec_file);
+  listDependencies(npm_module, (dependencies) => {
+    spec_file = replaceAttribute(spec_file, '\\$PROVIDES', dependenciesToProvides(dependencies));
+    spec_file = replaceAttribute(spec_file, '\\$BUNDLEDSOURCES', dependenciesToSources(dependencies));
+	  console.log(spec_file);
+  });
 }
