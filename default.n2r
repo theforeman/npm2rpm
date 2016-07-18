@@ -44,7 +44,7 @@ This package contains documentation for nodejs-%{npm_name}
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
 cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/%{npm_name}
-#if any binaries are included, symlink them to bindir here
+# If any binaries are included, symlink them to bindir here
 mkdir -p %{buildroot}%{_bindir}
 $BINSNIPPET
 
@@ -52,9 +52,11 @@ $BINSNIPPET
 
 %files
 %{nodejs_sitelib}/%{npm_name}
+%exclude %{nodejs_sitelib}/%{npm_name}/package.json
 $FILESBINSNIPPET
+$LICENSEFILE
 
 %files doc
-%doc $DOCFILES
+$DOCFILES
 
 %changelog

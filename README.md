@@ -18,8 +18,6 @@ npm2rpm - convert npm modules to RPM packages
 Example: ./bin/npm2rpm.js -n webpack -v 1.13.1 -> prints out the rpm spec.
 
 TODOs:
-  - Retrieve files for %files doc section
-  - Retrieve files for %install section
   - Download sources
   - Install from sources in %build or %prep
 

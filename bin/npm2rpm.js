@@ -79,6 +79,17 @@ function npmModule(opts) {
   this.tmp_location = opts['tmp_location'] + '/package';
   this.binaries = opts['binaries'];
   this.files = opts['files'];
+  this.doc_files = findFiles(this.files, /\.txt|\.md|readme|contributing/i);
+  this.license_file = findFiles(this.files, /license/i);
+
+	function findFiles(files, regex) {
+		var matching_files = [];
+		files.forEach((file) => {
+			if(regex.test(file))
+				matching_files.push(file);
+		});
+		return matching_files;
+	}
 }
 
 // SpecFile creation
@@ -155,6 +166,13 @@ function listBinaryFiles(binaries) {
   }
 }
 
+function listDocFiles(doc_files) {
+  var result = doc_files.map((doc_file) => {
+		return '%doc ' + doc_file;
+	});
+	return result.join('\n');
+}
+
 function getBasename(fullpath) {
   return fullpath.replace(/^.*[\\\/]/, '');
 }
@@ -164,6 +182,7 @@ function generateSpecFile(npm_module) {
 	spec_file = replaceAttribute(spec_file, '\\$NAME', npm_module.name);
 	spec_file = replaceAttribute(spec_file, '\\$VERSION', npm_module.version);
 	spec_file = replaceAttribute(spec_file, '\\$RELEASE', npm2rpm.release);
+	spec_file = replaceAttribute(spec_file, '\\$LICENSEFILE', '%doc ' + npm_module.license_file);
 	spec_file = replaceAttribute(spec_file, '\\$LICENSE', npm_module.license);
 	spec_file = replaceAttribute(spec_file, '\\$SUMMARY', npm_module.summary);
 	spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
@@ -171,7 +190,8 @@ function generateSpecFile(npm_module) {
 	spec_file = replaceAttribute(spec_file, '\\$BINSNIPPET', symlinkBinaries(npm_module));
 	spec_file = replaceAttribute(spec_file, '\\$REQUIRES', 'Requires: nodejs(engine)');
 	spec_file = replaceAttribute(spec_file, '\\$FILESBINSNIPPET', listBinaryFiles(npm_module.binaries));
-	//spec_file = replaceAttribute(spec_file, '\\$FILESTOCOPY', npm_module.binary_files);
+	spec_file = replaceAttribute(spec_file, '\\$FILESTOCOPY', npm_module.files.join(' '));
+	spec_file = replaceAttribute(spec_file, '\\$DOCFILES', listDocFiles(npm_module.doc_files));
   listDependencies(npm_module, (dependencies) => {
     spec_file = replaceAttribute(spec_file, '\\$PROVIDES', dependenciesToProvides(dependencies));
     spec_file = replaceAttribute(spec_file, '\\$BUNDLEDSOURCES', dependenciesToSources(dependencies));
