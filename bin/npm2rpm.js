@@ -28,7 +28,9 @@ tar_extract['stream'].on('finish', (results) => {
 		description: package_json['description'],
 		project_url: package_json['homepage'],
     tmp_location: tar_extract['location'],
-		dependencies: package_json['dependencies']
+		dependencies: package_json['dependencies'],
+		binaries: package_json['bin'], // can be a string or a hash { binary: location }
+		files: fs.readdirSync(tar_extract['location'] + '/package/')
 	}
 
   var npm_module = new npmModule(npm_module_opts);
@@ -75,6 +77,8 @@ function npmModule(opts) {
 	this.project_url = opts['project_url'];
 	this.dependencies = opts['dependencies'];
   this.tmp_location = opts['tmp_location'] + '/package';
+  this.binaries = opts['binaries'];
+  this.files = opts['files'];
 }
 
 // SpecFile creation
@@ -118,6 +122,43 @@ function dependenciesToSources(deps) {
 	return sources.join('\n');
 }
 
+function symlinkBinaries(npm_module) {
+  // We have 'no control' over this variable, it comes from package.json
+  if (typeof(npm_module.binaries) == 'string') {
+    return symlinkBinary(npm_module.name, npm_module.binaries);
+  } else {
+    var symlink_snippet = '';
+    for(var binary in npm_module.binaries) {
+      symlink_snippet += symlinkBinary(npm_module.name, npm_module.binaries[binary]);
+      symlink_snippet += '\n';
+    }
+    return symlink_snippet;
+  }
+}
+
+function symlinkBinary(name, binary_path) {
+	var basename = getBasename(binary_path);
+	return 'ln -s %{nodejs_sitelib}/' + name + '/' + basename +
+		' %{buildroot}%{_bindir}/' + basename;
+}
+
+function listBinaryFiles(binaries) {
+  if (typeof(binaries) == 'string') {
+    return '%{_bindir}/' + getBasename(binaries);
+  } else {
+    var binary_files = '';
+    for(var binary in binaries) {
+      binary_files += getBaseName(binaries[binary]);
+      binary_files += '\n';
+    }
+    return binary_files;
+  }
+}
+
+function getBasename(fullpath) {
+  return fullpath.replace(/^.*[\\\/]/, '');
+}
+
 function generateSpecFile(npm_module) {
 	var spec_file = fs.readFileSync(npm2rpm.template, { encoding: 'utf8' });
 	spec_file = replaceAttribute(spec_file, '\\$NAME', npm_module.name);
@@ -127,6 +168,10 @@ function generateSpecFile(npm_module) {
 	spec_file = replaceAttribute(spec_file, '\\$SUMMARY', npm_module.summary);
 	spec_file = replaceAttribute(spec_file, '\\$PROJECTURL', npm_module.project_url);
 	spec_file = replaceAttribute(spec_file, '\\$DESCRIPTION', npm_module.description);
+	spec_file = replaceAttribute(spec_file, '\\$BINSNIPPET', symlinkBinaries(npm_module));
+	spec_file = replaceAttribute(spec_file, '\\$REQUIRES', 'Requires: nodejs(engine)');
+	spec_file = replaceAttribute(spec_file, '\\$FILESBINSNIPPET', listBinaryFiles(npm_module.binaries));
+	//spec_file = replaceAttribute(spec_file, '\\$FILESTOCOPY', npm_module.binary_files);
   listDependencies(npm_module, (dependencies) => {
     spec_file = replaceAttribute(spec_file, '\\$PROVIDES', dependenciesToProvides(dependencies));
     spec_file = replaceAttribute(spec_file, '\\$BUNDLEDSOURCES', dependenciesToSources(dependencies));

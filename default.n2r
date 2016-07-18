@@ -36,7 +36,7 @@ This package contains documentation for nodejs-%{npm_name}
 %prep
 %setup -q -n package
 
-$BUNDLESNIPPET
+# Here we should install the package from Source0 to X?
 
 %build
 #nothing to do
@@ -47,7 +47,6 @@ cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/%{npm_name}
 #if any binaries are included, symlink them to bindir here
 mkdir -p %{buildroot}%{_bindir}
 $BINSNIPPET
-$SYMLINKDEPS
 
 %check
 
