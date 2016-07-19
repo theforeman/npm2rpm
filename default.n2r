@@ -35,11 +35,12 @@ This package contains documentation for nodejs-%{npm_name}
 
 %prep
 %setup -q -n package
-
-# Here we should install the package from Source0 to X?
+# Remove bundled node_modules if there are any
+rm -rf node_modules/
 
 %build
-#nothing to do
+# Create node_modules tree structure
+%nodejs_symlink_deps --build
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
@@ -47,6 +48,8 @@ cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/%{npm_name}
 # If any binaries are included, symlink them to bindir here
 mkdir -p %{buildroot}%{_bindir}
 $BINSNIPPET
+
+%nodejs_symlink_deps
 
 %check
 
