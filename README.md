@@ -20,4 +20,4 @@ Example: ./bin/npm2rpm.js -n webpack -v 1.13.1 -> prints out the rpm spec.
 TODOs:
   - Download sources
   - Install from sources in %build or %prep
-
+  - Actually build RPM (currently it only downloads sources & writes spec)
