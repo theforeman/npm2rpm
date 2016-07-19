@@ -13,7 +13,7 @@ npm2rpm
 .option('-n, --name <name>', 'NodeJS module name')
 .option('-v, --version [version]', 'module version in X.Y.Z format')
 .option('-r, --release [release]', "RPM's release", 1)
-.option('-t, --template [template]', "RPM .spec template to use", 'default.n2r')
+.option('-t, --template [template]', "RPM .spec template to use", __dirname + '/../default.n2r')
 .parse(process.argv);
 
 
