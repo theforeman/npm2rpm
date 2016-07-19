@@ -1,7 +1,3 @@
-# TODOs:
-#   - list doc files properly (%doc %{nodejs_sitelib}/%{npm_name}/README.md)
-#   - exclude unnecessary files from %files section
-
 %global npm_name $NAME
 
 Name: nodejs-%{npm_name}

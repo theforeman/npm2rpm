@@ -1,8 +1,6 @@
 npm2rpm
 =======
 
-:construction: This project is not finished yet. Use at your own peril.
-
 npm2rpm - convert npm modules to RPM packages
 
   Usage: npm2rpm [options]
@@ -15,7 +13,7 @@ npm2rpm - convert npm modules to RPM packages
     -r, --release [release]    RPM's release
     -t, --template [template]  RPM .spec template to use (by default default.n2r)
 
-Example: ./bin/npm2rpm.js -n webpack -v 1.13.1 -> prints out the rpm spec.
+Example: ./bin/npm2rpm.js -n webpack -v 1.13.1 -> creates the spec and downloads sources in npm2rpm/
 
 TODOs:
   - Install from sources in %build or %prep
