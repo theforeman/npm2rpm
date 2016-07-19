@@ -16,6 +16,12 @@ npm2rpm
 .option('-t, --template [template]', "RPM .spec template to use", 'default.n2r')
 .parse(process.argv);
 
+
+// If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
+if (typeof(npm2rpm.name) == 'function') {
+  npm2rpm.help();
+}
+
 var tar_extract = helpers.extractTar(helpers.downloadFromNPM(npm2rpm.name, npm2rpm.version));
 tar_extract['stream'].on('error', (error) => {
 	console.log(error);
