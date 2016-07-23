@@ -7,8 +7,9 @@ Summary: $SUMMARY
 License: $LICENSE
 Group: Development/Libraries
 URL: $PROJECTURL
-$BUNDLEDSOURCES
-$REQUIRES
+# Substitute by your own source with node_modules if packaging with bundle deps
+Source0: http://registry.npmjs.org/%{npm_name}/-/%{npm_name}-$VERSION.tgz
+Requires: nodejs(engine)
 BuildRequires: nodejs-devel
 BuildRequires: nodejs-packaging
 BuildArch: noarch
@@ -30,8 +31,6 @@ This package contains documentation for nodejs-%{npm_name}
 
 %prep
 %setup -q -n package
-# Remove bundled node_modules if there are any
-rm -rf node_modules/
 
 %build
 # Create node_modules tree structure
@@ -41,7 +40,6 @@ rm -rf node_modules/
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
 cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/%{npm_name}
 # If any binaries are included, symlink them to bindir here
-mkdir -p %{buildroot}%{_bindir}
 $BINSNIPPET
 
 %nodejs_symlink_deps

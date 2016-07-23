@@ -11,6 +11,7 @@ console.log('---- npm2rpm ----'.green.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
 npm2rpm
 .option('-n, --name <name>', 'NodeJS module name')
+.option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
 .option('-v, --version [version]', 'module version in X.Y.Z format')
 .option('-r, --release [release]', "RPM's release", 1)
 .option('-t, --template [template]', "RPM .spec template to use", __dirname + '/../default.n2r')
@@ -20,6 +21,11 @@ npm2rpm
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
 if (typeof(npm2rpm.name) == 'function') {
   npm2rpm.help();
+}
+
+if (npm2rpm.strategy == undefined) {
+  console.log(' - Undefined strategy - defaulting to single'.bold)
+  npm2rpm.strategy = 'single';
 }
 
 var tar_extract = helpers.extractTar(helpers.downloadFromNPM(npm2rpm.name, npm2rpm.version));
@@ -40,42 +46,38 @@ tar_extract['stream'].on('finish', () => {
     tmp_location: tar_extract['location'],
 		dependencies: package_json['dependencies'],
 		binaries: package_json['bin'], // can be a string or a hash { binary: location }
-		files: fs.readdirSync(tar_extract['location'] + '/package/')
+		files: fs.readdirSync(tar_extract['location'] + '/package/'),
+    bundle: (npm2rpm.strategy == 'bundle')
 	}
 
   var npm_module = new npmModule(npm_module_opts);
   listDependencies(npm_module, (dependencies) => {
     var spec_file = specFileGenerator(npm_module, dependencies, npm2rpm.release, npm2rpm.template);
     if (!fs.existsSync('npm2rpm'))
-			fs.mkdirSync('npm2rpm');
-		if (!fs.existsSync('npm2rpm/SOURCES'))
-			fs.mkdirSync('npm2rpm/SOURCES');
-		if (!fs.existsSync('npm2rpm/SPECS'))
-			fs.mkdirSync('npm2rpm/SPECS');
+      fs.mkdirSync('npm2rpm');
+    if (!fs.existsSync('npm2rpm/SOURCES'))
+      fs.mkdirSync('npm2rpm/SOURCES');
+    if (!fs.existsSync('npm2rpm/SPECS'))
+      fs.mkdirSync('npm2rpm/SPECS');
     fs.writeFile('npm2rpm/SPECS/nodejs-' + npm_module.name + '.spec', spec_file);
 
-    async.each(dependencies, (file, callback) => {
-      var download_location = fs.createWriteStream('npm2rpm/SOURCES/' + file[0] + '-' + file[1] + '.tgz');
-      var download_pipe = helpers.downloadFromNPM(file[0], file[1]).pipe(download_location);
-      download_pipe.on('finish', () => {
-        console.log('   - ' + file[0] + '-' + file[1] + ' finished'.green);
-        callback(null)
-      });
-      download_pipe.on('error', (error) => {
-        console.log('   - ' + file[0] + '-' + file[1] + ' failed to download'.red);
-        callback(error);
-      })
-    }, (err) => {
-      if(err) {
-        console.log('Error: '.bold.red + err + ' failed to download'.bold.red);
-      } else {
-        console.log('All files have been processed successfully'.white.underline);
-        console.log('Check out npm2rpm/SOURCES and npm2rpm/SPECS for the results.');
-      }
+    var download_pipe = downloadSource(npm_module);
+    download_pipe.on('finish', () => {
+      console.log('   - ' + npm_module.name + '-' + npm_module.version + ' finished'.green);
+      console.log('All files have been processed successfully'.white.underline);
+      console.log('Check out npm2rpm/SOURCES and npm2rpm/SPECS for the results.');
+    });
+    download_pipe.on('error', (error) => {
+      console.log('   - ' + npm_module.name + '-' + npm_module.version + ' failed to download'.red);
     });
     //console.log(spec_file);
   });
 })
+
+function downloadSource(npm_module) {
+  var download_location = fs.createWriteStream('npm2rpm/SOURCES/' + npm_module.name + '-' + npm_module.version + '.tgz');
+  return helpers.downloadFromNPM(npm_module.name, npm_module.version).pipe(download_location);
+}
 
 function listDependencies(npm_module, callback) {
 	var ls = require('npm-remote-ls').ls
