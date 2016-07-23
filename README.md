@@ -20,7 +20,7 @@ Example: ./bin/npm2rpm.js -n webpack -v 1.13.1 -> creates the spec and downloads
 
 To package npm dependencies in RPM, you have 3 strategies:
 
-#### Packaging 'single' npm modules into rpms.
+#### Packaging 'single' npm modules into rpms. (-s --strategy single)
 This is the way most Linux distributions prefer to do it. See the [Fedora guidelines](https://fedoraproject.org/wiki/Packaging:Node.js) about packaging nodejs libraries.
 The content of this package will contain just the content of the module, without bundled dependencies. It'll have `Requires` and `Provides` equal to the same you see in `package.json`.
 
@@ -30,7 +30,7 @@ At this point you may have noticed you cannot build 2 RPMs for the same dependen
 
 In practice, a medium-sized web application can easily have hundreds of dependencies (counting different versions of the same dependency) due to how `npm install` works. Disregard this stratey if you want to package the dependencies for your application or you'll be in trouble :smile:
 
-#### Packaging npm modules with bundled dependencies (node_modules)
+#### Packaging npm modules with bundled dependencies (-s --stategy bundle)
 I took this idea from [njs2rpm](https://github.com/sfreire/njs2rpm). If you still want to package your applications as rpms, and not face dependency conflicts, you may want to go with this.
 
 The main idea is to include the node_modules directory (dependency tree) in every RPM package.
