@@ -1,3 +1,7 @@
+# TODO
+#
+# Remove nodejs_symlink_deps if installing bundled module with NPM
+
 %global npm_name $NAME
 
 Name: nodejs-%{npm_name}
@@ -7,11 +11,11 @@ Summary: $SUMMARY
 License: $LICENSE
 Group: Development/Libraries
 URL: $PROJECTURL
-# Substitute by your own source with node_modules if packaging with bundle deps
-Source0: http://registry.npmjs.org/%{npm_name}/-/%{npm_name}-$VERSION.tgz
+$SOURCES
 Requires: nodejs(engine)
 BuildRequires: nodejs-devel
 BuildRequires: nodejs-packaging
+BuildRequires: npm
 BuildArch: noarch
 ExclusiveArch: %{nodejs_arches} noarch
 Provides: npm(%{npm_name}) = %{version}
@@ -30,15 +34,14 @@ BuildArch: noarch
 This package contains documentation for nodejs-%{npm_name}
 
 %prep
-%setup -q -n package
+$SETUP
 
 %build
-# Create node_modules tree structure
-%nodejs_symlink_deps --build
+$BUILD
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
-cp -pfr $FILESTOCOPY %{buildroot}%{nodejs_sitelib}/%{npm_name}
+$COPYFILES
 # If any binaries are included, symlink them to bindir here
 $BINSNIPPET
 

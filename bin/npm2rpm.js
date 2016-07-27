@@ -59,25 +59,23 @@ tar_extract['stream'].on('finish', () => {
       fs.mkdirSync('npm2rpm/SOURCES');
     if (!fs.existsSync('npm2rpm/SPECS'))
       fs.mkdirSync('npm2rpm/SPECS');
-    fs.writeFile('npm2rpm/SPECS/nodejs-' + npm_module.name + '.spec', spec_file);
+    if (npm_module.bundle){
+      fs.writeFile('npm2rpm/SPECS/nodejs-bundle-' + npm_module.name + '.spec', spec_file);
+    } else {
+      fs.writeFile('npm2rpm/SPECS/nodejs-' + npm_module.name + '.spec', spec_file);
+    }
 
-    var download_pipe = downloadSource(npm_module);
-    download_pipe.on('finish', () => {
-      console.log('   - ' + npm_module.name + '-' + npm_module.version + ' finished'.green);
+    if (npm_module.bundle) {
+      console.log(' - Generating npm cache tgz... '.bold)
+      createNpmCacheTar(npm_module);
+      downloadDependencies(dependencies);
+    } else {
       console.log('All files have been processed successfully'.white.underline);
       console.log('Check out npm2rpm/SOURCES and npm2rpm/SPECS for the results.');
-    });
-    download_pipe.on('error', (error) => {
-      console.log('   - ' + npm_module.name + '-' + npm_module.version + ' failed to download'.red);
-    });
+    }
     //console.log(spec_file);
   });
 })
-
-function downloadSource(npm_module) {
-  var download_location = fs.createWriteStream('npm2rpm/SOURCES/' + npm_module.name + '-' + npm_module.version + '.tgz');
-  return helpers.downloadFromNPM(npm_module.name, npm_module.version).pipe(download_location);
-}
 
 function listDependencies(npm_module, callback) {
 	var ls = require('npm-remote-ls').ls
@@ -100,3 +98,33 @@ function listDependencies(npm_module, callback) {
 	});
 }
 
+function downloadDependencies(dependencies) {
+  async.each(dependencies, (file, callback) => {
+    var download_location = fs.createWriteStream('npm2rpm/SOURCES/' + file[0] + '-' + file[1] + '.tgz');
+    var download_pipe = helpers.downloadFromNPM(file[0], file[1]).pipe(download_location);
+    download_pipe.on('finish', () => {
+      console.log('   - ' + file[0] + '-' + file[1] + ' finished'.green);
+      callback(null)
+    });
+    download_pipe.on('error', (error) => {
+      console.log('   - ' + file[0] + '-' + file[1] + ' failed to download'.red);
+      callback(error);
+    })
+  }, (err) => {
+    if(err) {
+      console.log('Error: '.bold.red + err + ' failed to download'.bold.red);
+    } else {
+      console.log('All files have been processed successfully'.white.underline);
+      console.log('Check out npm2rpm/SOURCES and npm2rpm/SPECS for the results.');
+    }
+  });
+}
+
+function createNpmCacheTar(npm_module) {
+  var filename = npm_module.name + '-' + npm_module.version + '-registry.npmjs.org.tgz'
+  const execSync = require('child_process').execSync;
+  execSync(__dirname + '/generate_npm_tarball.sh ' + npm_module.name +
+           ' ' + 'npm2rpm/SOURCES/' + filename, {stdio:[0,1,2]});
+
+
+}
