@@ -8,11 +8,11 @@ package=$1
 output=$2
 
 wd=$(mktemp -d)
-trap "rm -rf '$wd'" EXIT INT TERM
+trap "rm -r '$wd'" EXIT INT TERM
 
 mkdir $wd/cache $wd/install
 cd $wd/install
-npm install --cache $wd/cache $package
+npm install --cache $wd/cache $package --production --verbose
 cd - 2>/dev/null
 
-(cd $wd/cache/registry.npmjs.org && find . -name .cache.json | xargs tar zcf -) > $output
+(cd $wd/cache && find . -name .cache.json | xargs tar zcf -) > $output

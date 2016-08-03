@@ -51,7 +51,6 @@ $BINSNIPPET
 
 %files
 %{nodejs_sitelib}/%{npm_name}
-%exclude %{nodejs_sitelib}/%{npm_name}/package.json
 $FILESBINSNIPPET
 $LICENSEFILE
 
