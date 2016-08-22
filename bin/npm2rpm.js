@@ -17,7 +17,6 @@ npm2rpm
 .option('-t, --template [template]', "RPM .spec template to use", __dirname + '/../default.n2r')
 .parse(process.argv);
 
-
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
 if (typeof(npm2rpm.name) == 'function') {
   npm2rpm.help();
@@ -86,7 +85,7 @@ function listDependencies(npm_module, callback) {
 		optional: false
 	});
 
-	console.log(' - Fetching flattened list of production dependencies'.bold);
+	console.log(' - Fetching flattened list of production dependencies for '.bold + npm_module.name);
 	ls(npm_module.name, npm_module.version, true, function (deps) {
 		var dependencies_array = deps.map((dependency) => {
 		  // Dependencies come as name@version
@@ -125,6 +124,4 @@ function createNpmCacheTar(npm_module) {
   const execSync = require('child_process').execSync;
   execSync(__dirname + '/generate_npm_tarball.sh ' + npm_module.name +
            ' ' + 'npm2rpm/SOURCES/' + filename, {stdio:[0,1,2]});
-
-
 }
