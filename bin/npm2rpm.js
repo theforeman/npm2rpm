@@ -1,27 +1,30 @@
 #! /usr/bin/env node
-var colors = require('colors');
+// NodeJS core
+var async = require('async');
 var fs = require('fs');
+const execSync = require('child_process').execSync;
+const path = require('path');
+// NPM deps
+var ls = require('npm-remote-ls').ls
+var config = require('npm-remote-ls').config
+var colors = require('colors');
 var npm2rpm = require('commander');
 var helpers = require('../lib/npm_helpers.js');
 var npmModule = require('../lib/npm_module.js');
 var specFileGenerator = require('../lib/spec_file_generator.js');
-var async = require('async');
-const execSync = require('child_process').execSync;
-var ls = require('npm-remote-ls').ls
-var config = require('npm-remote-ls').config
 
 console.log('---- npm2rpm ----'.green.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
 npm2rpm
 .option('-n, --name <name>', 'NodeJS module name')
+.option('-v, --version <version>', 'module version in X.Y.Z format')
 .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
-.option('-v, --version [version]', 'module version in X.Y.Z format')
 .option('-r, --release [release]', "RPM's release", 1)
 .option('-t, --template [template]', "RPM .spec template to use", path.join(__dirname,'/../default.n2r'))
 .parse(process.argv);
 
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
-if (typeof(npm2rpm.name) === 'function') {
+if (typeof(npm2rpm.name) === 'function' || typeof(npm2rpm.version) === 'function') {
   npm2rpm.help();
 }
 

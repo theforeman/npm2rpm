@@ -1,9 +1,7 @@
-# TODO
-#
+# FIXME
 # Remove nodejs_symlink_deps if installing bundled module with NPM
 
 %global npm_name $NAME
-
 %global enable_tests 0
 
 %{?nodejs_find_provides_and_requires}
