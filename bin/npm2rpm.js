@@ -6,6 +6,9 @@ var helpers = require('../lib/npm_helpers.js');
 var npmModule = require('../lib/npm_module.js');
 var specFileGenerator = require('../lib/spec_file_generator.js');
 var async = require('async');
+const execSync = require('child_process').execSync;
+var ls = require('npm-remote-ls').ls
+var config = require('npm-remote-ls').config
 
 console.log('---- npm2rpm ----'.green.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
@@ -14,21 +17,22 @@ npm2rpm
 .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
 .option('-v, --version [version]', 'module version in X.Y.Z format')
 .option('-r, --release [release]', "RPM's release", 1)
-.option('-t, --template [template]', "RPM .spec template to use", __dirname + '/../default.n2r')
+.option('-t, --template [template]', "RPM .spec template to use", path.join(__dirname,'/../default.n2r'))
 .parse(process.argv);
 
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
-if (typeof(npm2rpm.name) == 'function') {
+if (typeof(npm2rpm.name) === 'function') {
   npm2rpm.help();
 }
 
-if (npm2rpm.strategy == undefined) {
+if (npm2rpm.strategy === undefined) {
   console.log(' - Undefined strategy - defaulting to single'.bold)
   npm2rpm.strategy = 'single';
 }
 
 var tar_extract = helpers.extractTar(helpers.downloadFromNPM(npm2rpm.name, npm2rpm.version));
 tar_extract['stream'].on('error', (error) => {
+	console.log('ERROR');
 	console.log(error);
 })
 tar_extract['stream'].on('finish', () => {
@@ -46,7 +50,7 @@ tar_extract['stream'].on('finish', () => {
 		dependencies: package_json['dependencies'],
 		binaries: package_json['bin'], // can be a string or a hash { binary: location }
 		files: fs.readdirSync(tar_extract['location'] + '/package/'),
-    bundle: (npm2rpm.strategy == 'bundle')
+    bundle: (npm2rpm.strategy === 'bundle')
 	}
 
   var npm_module = new npmModule(npm_module_opts);
@@ -77,9 +81,6 @@ tar_extract['stream'].on('finish', () => {
 })
 
 function listDependencies(npm_module, callback) {
-	var ls = require('npm-remote-ls').ls
-	var config = require('npm-remote-ls').config
-
 	config({
 		development: false,
 		optional: false
@@ -121,7 +122,6 @@ function downloadDependencies(dependencies) {
 
 function createNpmCacheTar(npm_module) {
   var filename = npm_module.name + '-' + npm_module.version + '-registry.npmjs.org.tgz'
-  const execSync = require('child_process').execSync;
-  execSync(__dirname + '/generate_npm_tarball.sh ' + npm_module.name +
-           ' ' + 'npm2rpm/SOURCES/' + filename, {stdio:[0,1,2]});
+  execSync(path.join(__dirname, '/generate_npm_tarball.sh ', npm_module.name,
+           ' ', 'npm2rpm/SOURCES/', filename), {stdio:[0,1,2]});
 }
