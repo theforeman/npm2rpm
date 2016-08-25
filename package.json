@@ -34,8 +34,7 @@
     "async": "~1.5.2"
   },
   "devDependencies": {
-    "mocha": "~3.0.2",
-    "chai": "~3.5.0"
+    "mocha": "~3.0.2"
   },
   "homepage": "https://github.com/dLobatog/npm2rpm#readme",
   "preferGlobal": true,
