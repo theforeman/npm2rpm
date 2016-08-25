@@ -5,7 +5,6 @@ var fs = require('fs');
 const execSync = require('child_process').execSync;
 const path = require('path');
 // NPM deps
-var request = require('request');
 var ls = require('npm-remote-ls').ls
 var config = require('npm-remote-ls').config
 var colors = require('colors');
@@ -25,7 +24,7 @@ npm2rpm
 .parse(process.argv);
 
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
-if (typeof(npm2rpm.name) === 'function') || typeof(npm2rpm.version) === 'function') {
+if (typeof(npm2rpm.name) === 'function' || typeof(npm2rpm.version) === 'function') {
   npm2rpm.help();
 }
 
@@ -50,7 +49,7 @@ tar_extract['stream'].on('finish', () => {
 		license: package_json['license'],
 		description: package_json['description'],
 		project_url: package_json['homepage'],
-        bugs_url: package_json['bugs'].url,
+	    bugs_url: package_json['bugs'].url,
     tmp_location: tar_extract['location'],
 		dependencies: package_json['dependencies'],
 		binaries: package_json['bin'], // can be a string or a hash { binary: location }
