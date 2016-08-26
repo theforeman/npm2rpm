@@ -48,8 +48,9 @@ tar_extract['stream'].on('finish', () => {
 		version: package_json['version'],
 		license: package_json['license'],
 		description: package_json['description'],
-		project_url: package_json['homepage'],
-		bugs_url: package_json['bugs'].url,
+		homepage: package_json['homepage'],
+		bugs: package_json['bugs'],
+		repository: package_json['repository'],
     tmp_location: tar_extract['location'],
 		dependencies: package_json['dependencies'],
 		binaries: package_json['bin'], // can be a string or a hash { binary: location }
