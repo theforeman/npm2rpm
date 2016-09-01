@@ -125,6 +125,6 @@ function downloadDependencies(dependencies) {
 
 function createNpmCacheTar(npm_module) {
   var filename = npm_module.name + '-' + npm_module.version + '-registry.npmjs.org.tgz'
-  execSync(path.join(__dirname, '/generate_npm_tarball.sh ', npm_module.name,
-           ' ', 'npm2rpm/SOURCES/', filename), {stdio:[0,1,2]});
+  execSync([path.join(__dirname, '/generate_npm_tarball.sh'), npm_module.name,
+           ' ', path.join('npm2rpm/SOURCES/', filename)].join(' '), {stdio:[0,1,2]});
 }
