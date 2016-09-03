@@ -76,8 +76,7 @@ tar_extract['stream'].on('finish', () => {
       createNpmCacheTar(npm_module);
       downloadDependencies(dependencies);
     } else {
-      console.log('All files have been processed successfully'.white.underline);
-      console.log('Check out npm2rpm/SOURCES and npm2rpm/SPECS for the results.');
+      downloadDependencies([[npm_module.name, npm_module.version]])
     }
     //console.log(spec_file);
   });
