@@ -3,6 +3,7 @@ npm2rpm
 
 [![Known Vulnerabilities](https://snyk.io/test/github/dlobatog/npm2rpm/badge.svg)](https://snyk.io/test/github/dlobatog/npm2rpm)
 [![Code Climate](https://codeclimate.com/github/dLobatog/npm2rpm/badges/gpa.svg)](https://codeclimate.com/github/dLobatog/npm2rpm)
+[![Build Status](https://travis-ci.org/dLobatog/npm2rpm.svg?branch=master)](https://travis-ci.org/dLobatog/npm2rpm)
 
 npm2rpm - convert npm modules to RPM packages
 
