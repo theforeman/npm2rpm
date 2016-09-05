@@ -1,6 +1,6 @@
 {
   "name": "npm2rpm",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "Convert npm packages to rpm packages",
   "main": "index.js",
   "scripts": {
