@@ -1,6 +1,3 @@
-# FIXME
-# Remove nodejs_symlink_deps if installing bundled module with NPM
-
 %global npm_name $NAME
 %global enable_tests 0
 
@@ -39,11 +36,11 @@ $COPYFILES
 # If any binaries are included, symlink them to bindir here
 $BINSNIPPET
 
-%nodejs_symlink_deps
+$NODEJS_SYMLINK_DEPS
 
 %if 0%{?enable_tests}
 %check
-%{nodejs_symlink_deps} --check
+$NODEJS_SYMLINK_DEPS_CHECK
 #$CHECK
 %endif
 
