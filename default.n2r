@@ -6,6 +6,7 @@
 Name: nodejs-%{npm_name}
 Version: $VERSION
 Release: $RELEASE%{?dist}
+Epoch:   100
 Summary: $SUMMARY
 License: $LICENSE
 URL: $PROJECTURL
