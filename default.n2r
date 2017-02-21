@@ -15,12 +15,7 @@ URL: $PROJECTURL
 $SOURCES
 BuildRequires: nodejs-packaging
 BuildArch:  noarch
-
-%if 0%{?fedora} >= 19
 ExclusiveArch: %{nodejs_arches} noarch
-%else
-ExclusiveArch: %{ix86} x86_64 %{arm} noarch
-%endif
 
 $PROVIDES
 
