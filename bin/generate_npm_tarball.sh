@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -ne 2 ]; then
-  echo "usage: $0 PACKAGE OUTPUT.TGZ"
+  echo "usage: $0 PACKAGE[@VERSION] OUTPUT.TGZ"
   exit 1
 fi
 package=$1
