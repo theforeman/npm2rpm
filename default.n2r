@@ -19,6 +19,7 @@ ExclusiveArch: %{nodejs_arches} noarch
 
 $PROVIDES
 
+%define npm_cache_dir /tmp/npm_cache_%{name}-%{version}-%{release}
 %description
 %{summary}
 
@@ -36,6 +37,9 @@ $BINSNIPPET
 
 %nodejs_symlink_deps
 
+%clean
+rm -rf %{buildroot} %{npm_cache_dir}
+
 %if 0%{?enable_tests}
 %check
 %{nodejs_symlink_deps} --check
@@ -49,3 +53,5 @@ $LICENSEFILE
 $DOCFILES
 
 %changelog
+* $DATE author@example.com <Author Name> - $VERSION-$RELEASE
+- First release 

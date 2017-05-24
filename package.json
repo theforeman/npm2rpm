@@ -31,6 +31,7 @@
     "tmp": "~0.0.28",
     "tar": "~2.2.1",
     "npm-remote-ls": "~1.3.2",
+    "datejs": "*",
     "async": "~1.5.2"
   },
   "devDependencies": {
