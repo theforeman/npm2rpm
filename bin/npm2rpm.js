@@ -67,11 +67,8 @@ tar_extract['stream'].on('finish', () => {
       fs.mkdirSync('npm2rpm/SOURCES');
     if (!fs.existsSync('npm2rpm/SPECS'))
       fs.mkdirSync('npm2rpm/SPECS');
-    if (npm_module.bundle){
-      fs.writeFile('npm2rpm/SPECS/nodejs-bundle-' + npm_module.name + '.spec', spec_file);
-    } else {
-      fs.writeFile('npm2rpm/SPECS/nodejs-' + npm_module.name + '.spec', spec_file);
-    }
+
+    fs.writeFile('npm2rpm/SPECS/nodejs-' + npm_module.name + '.spec', spec_file);
 
     if (npm_module.bundle) {
       console.log(' - Generating npm cache tgz... '.bold)
