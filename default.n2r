@@ -1,8 +1,6 @@
 %global npm_name $NAME
 %global enable_tests 0
 
-%{?nodejs_find_provides_and_requires}
-
 Name: nodejs-%{npm_name}
 Version: $VERSION
 Release: $RELEASE%{?dist}
