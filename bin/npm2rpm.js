@@ -20,7 +20,7 @@ npm2rpm
 .option('-v, --version <version>', 'module version in X.Y.Z format')
 .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
 .option('-r, --release [release]', "RPM's release", 1)
-.option('-t, --template [template]', "RPM .spec template to use", path.join(__dirname,'/../default.n2r'))
+.option('-t, --template [template]', "RPM .spec template to use", path.join(__dirname,'/../template.mustache'))
 .parse(process.argv);
 
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
