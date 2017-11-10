@@ -1,16 +1,12 @@
-# FIXME
-# Remove nodejs_symlink_deps if installing bundled module with NPM
-
 %global npm_name $NAME
 %global enable_tests 0
-
-%{?nodejs_find_provides_and_requires}
 
 Name: nodejs-%{npm_name}
 Version: $VERSION
 Release: $RELEASE%{?dist}
 Summary: $SUMMARY
-License: $LICENSE
+License: $LICENSETYPE
+Group: Development/Libraries
 URL: $PROJECTURL
 $SOURCES
 BuildRequires: nodejs-packaging
@@ -32,10 +28,9 @@ $BUILD
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
 $COPYFILES
-# If any binaries are included, symlink them to bindir here
 $BINSNIPPET
 
-%nodejs_symlink_deps
+$SYMLINK
 
 %clean
 rm -rf %{buildroot} %{npm_cache_dir}
@@ -43,7 +38,6 @@ rm -rf %{buildroot} %{npm_cache_dir}
 %if 0%{?enable_tests}
 %check
 %{nodejs_symlink_deps} --check
-#$CHECK
 %endif
 
 %files
@@ -54,4 +48,4 @@ $DOCFILES
 
 %changelog
 * $DATE author@example.com <Author Name> - $VERSION-$RELEASE
-- First release 
+- First release
