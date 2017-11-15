@@ -26,7 +26,9 @@ AutoProv: no
 %define npm_cache_dir /tmp/npm_cache_%{name}-%{version}-%{release}
 {{/BUNDLED}}
 {{^BUNDLED}}
-%{?nodejs_find_provides_and_requires}
+{{#DEPENDENCIES}}
+{{&.}}
+{{/DEPENDENCIES}}
 {{/BUNDLED}}
 
 %description
