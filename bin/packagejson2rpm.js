@@ -8,11 +8,12 @@ console.log('------- part of npm2rpm ----'.grey.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
 packagejson2rpm
 .option('-f, --file <file>', "Path to package.json file")
-.option('-d, --dir [dir]', "Path to directory containing folders with RPM specs")
+.option('-d, --dir <dir>', "Path to directory containing folders with RPM specs")
+.option('--ignore-extra-folders', "No warnings for extra RPM folders will be shown")
 .parse(process.argv);
 
 if ((typeof(packagejson2rpm.file) === 'function') ||
-    typeof(packagejson2rpm.directory) === 'function') {
+    typeof(packagejson2rpm.dir) === 'function') {
       packagejson2rpm.help();
 }
 
@@ -34,8 +35,10 @@ directories.forEach(function (directory) {
   var dependency_version = dependencies[package_name]
   // Check if package name is in list of dependencies.
   if (dependency_version === undefined) {
-    console.log(" - " + package_name.bold + " is not part of your dependencies, but it has an RPM folder.")
-    //console.log("This could happen if you are using unbundled dependencies or maybe the RPM folder is out of date with package.json")
+    if (!packagejson2rpm.ignoreExtraFolders) {
+      console.log(" - " + package_name.bold + " is not part of your dependencies, but it has an RPM folder.")
+      console.log("This could happen if you are using unbundled dependencies or maybe the RPM folder is out of date with package.json")
+    }
     return;
   } else {
     package_spec = fs.readFileSync(package_spec, 'utf8');
