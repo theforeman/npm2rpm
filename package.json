@@ -40,6 +40,7 @@
   "homepage": "https://github.com/dLobatog/npm2rpm#readme",
   "preferGlobal": true,
   "bin": {
-    "npm2rpm": "bin/npm2rpm.js"
+    "npm2rpm": "bin/npm2rpm.js",
+    "packagejson2rpm": "bin/packagejson2rpm.js"
   }
 }
