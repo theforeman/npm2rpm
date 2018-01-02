@@ -12,8 +12,8 @@ packagejson2rpm
 .option('--ignore-extra-folders', "No warnings for extra RPM folders will be shown")
 .parse(process.argv);
 
-if ((typeof(packagejson2rpm.file) === 'function') ||
-    typeof(packagejson2rpm.dir) === 'function') {
+if ((packagejson2rpm.file === undefined) ||
+    packagejson2rpm.dir === undefined) {
       packagejson2rpm.help();
 }
 
