@@ -10,7 +10,7 @@ wd=$(mktemp -d)
 trap "rm -r '$wd'" EXIT INT TERM
 
 create_cache() {
-  node_modules/npm/bin/npm-cli.js install --cache $wd/cache $package --no-optional --production --verbose
+  node_modules/npm/bin/npm-cli.js install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
 }
 
 mkdir $wd/cache $wd/install
