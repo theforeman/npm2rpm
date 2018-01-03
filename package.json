@@ -25,14 +25,16 @@
     "url": "https://github.com/dLobatog/npm2rpm/issues"
   },
   "dependencies": {
-    "commander": "~2.9.0",
+    "async": "~1.5.2",
     "colors": "~1.1.2",
-    "request": "~2.81.0",
-    "tmp": "~0.0.28",
-    "tar": "~2.2.1",
-    "npm-remote-ls": "~1.3.2",
+    "commander": "~2.9.0",
     "datejs": "*",
-    "async": "~1.5.2"
+    "mustache": "^2.3.0",
+    "npm-remote-ls": "~1.3.2",
+    "request": "~2.81.0",
+    "semver": "^5.4.1",
+    "tar": "~2.2.1",
+    "tmp": "~0.0.28"
   },
   "devDependencies": {
     "mocha": "~3.0.2"

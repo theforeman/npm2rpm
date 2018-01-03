@@ -1,0 +1,94 @@
+%global npm_name {{NAME}}
+%global enable_tests 1
+
+Name: nodejs-%{npm_name}
+Version: {{VERSION}}
+Release: {{RELEASE}}%{?dist}
+Summary: {{SUMMARY}}
+License: {{LICENSETYPE}}
+Group: Development/Libraries
+URL: {{&PROJECTURL}}
+{{#SOURCES}}
+{{&.}}
+{{/SOURCES}}
+BuildRequires: nodejs-packaging
+BuildArch: noarch
+ExclusiveArch: %{nodejs_arches} noarch
+
+{{#BUNDLED}}
+Provides: npm(%{npm_name}) = %{version}
+{{#PROVIDES}}
+Provides: bundled-npm({{name}}) = {{version}}
+{{/PROVIDES}}
+AutoReq: no
+AutoProv: no
+
+%define npm_cache_dir /tmp/npm_cache_%{name}-%{version}-%{release}
+{{/BUNDLED}}
+{{^BUNDLED}}
+{{#DEPENDENCIES}}
+{{&.}}
+{{/DEPENDENCIES}}
+{{/BUNDLED}}
+
+%description
+%{summary}
+
+%prep
+{{#BUNDLED}}
+mkdir -p %{npm_cache_dir}
+for tgz in %{sources}; do
+  echo $tgz | grep -q registry.npmjs.org || npm cache add --cache %{npm_cache_dir} $tgz
+done
+%setup -T -q -a {{PROVIDES.length}} -D -n %{npm_cache_dir}
+{{/BUNDLED}}
+{{^BUNDLED}}
+%setup -q -n package
+{{/BUNDLED}}
+
+%build
+{{#BUNDLED}}
+npm install --cache-min Infinity --cache %{npm_cache_dir} --no-optional --global-style true %{npm_name}@%{version}
+{{/BUNDLED}}
+
+%install
+mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
+{{&COPYFILES}}
+
+{{#BINARIES.length}}
+mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}/bin
+mkdir -p %{buildroot}%{_bindir}/
+{{/BINARIES.length}}
+{{#BINARIES}}
+install -p -D -m0755 bin/{{.}} %{buildroot}%{nodejs_sitelib}/%{npm_name}/bin/{{.}}
+ln -sf %{nodejs_sitelib}/%{npm_name}/bin/{{.}} %{buildroot}%{_bindir}/{{.}}
+{{/BINARIES}}
+
+{{^BUNDLED}}
+%nodejs_symlink_deps
+{{/BUNDLED}}
+{{#BUNDLED}}
+%clean
+rm -rf %{buildroot} %{npm_cache_dir}
+{{/BUNDLED}}
+
+%if 0%{?enable_tests}
+%check
+%{nodejs_symlink_deps} --check
+%endif
+
+%files
+%{nodejs_sitelib}/%{npm_name}
+{{#BINARIES}}
+%{_bindir}/{{.}}
+{{/BINARIES}}
+{{#LICENSEFILE}}
+%license {{LICENSEFILE}}
+{{/LICENSEFILE}}
+{{#DOCFILES}}
+%doc {{.}}
+{{/DOCFILES}}
+
+%changelog
+* {{DATE}} author@example.com <Author Name> - {{VERSION}}-{{RELEASE}}
+- First release
