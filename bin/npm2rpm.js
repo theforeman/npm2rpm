@@ -59,8 +59,12 @@ tar_extract['stream'].on('finish', () => {
 
     console.log(' - Fetching flattened list of production dependencies for '.bold + npm_module.name);
     ls(npm_module.name, npm_module.version, true, (deps) => {
-      // Dependencies come as name@version
-      var dependencies = deps.map(dependency => dependency.split('@'));
+      // Dependencies come as name@version but sometimes as @name@version
+      var dependencies = deps.map(dependency => {
+        // Work around the lack of rsplit
+        var index = dependency.lastIndexOf('@');
+        return [dependency.slice(0, index), dependency.slice(index + 1)];
+      });
       var spec_file = specFileGenerator(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template);
 
       writeSpecFile(npm_module.name, spec_file);
@@ -85,7 +89,9 @@ function writeSpecFile(name, content) {
 
 function downloadDependencies(dependencies) {
   async.each(dependencies, (file, callback) => {
-    var download_location = fs.createWriteStream('npm2rpm/SOURCES/' + file[0] + '-' + file[1] + '.tgz');
+    var filename = 'npm2rpm/SOURCES/' + file[0] + '-' + file[1] + '.tgz';
+    helpers.ensureDirSync(path.dirname(filename));
+    var download_location = fs.createWriteStream(filename);
     var download_pipe = helpers.downloadFromNPM(file[0], file[1]).pipe(download_location);
     download_pipe.on('finish', () => {
       console.log('   - ' + file[0] + '-' + file[1] + ' finished'.green);
