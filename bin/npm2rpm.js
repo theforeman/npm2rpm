@@ -77,13 +77,9 @@ tar_extract['stream'].on('finish', () => {
 })
 
 function writeSpecFile(name, content) {
-  if (!fs.existsSync('npm2rpm'))
-    fs.mkdirSync('npm2rpm');
-  if (!fs.existsSync('npm2rpm/SOURCES'))
-    fs.mkdirSync('npm2rpm/SOURCES');
-  if (!fs.existsSync('npm2rpm/SPECS'))
-    fs.mkdirSync('npm2rpm/SPECS');
-
+  helpers.ensureDirSync('npm2rpm');
+  helpers.ensureDirSync('npm2rpm/SOURCES');
+  helpers.ensureDirSync('npm2rpm/SPECS');
   fs.writeFile('npm2rpm/SPECS/nodejs-' + name + '.spec', content);
 }
 
