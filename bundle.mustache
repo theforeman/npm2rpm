@@ -1,0 +1,69 @@
+%global npm_name {{{NAME}}}
+
+Name: nodejs-%{npm_name}
+Version: {{{VERSION}}}
+Release: {{{RELEASE}}}%{?dist}
+Summary: {{{SUMMARY}}}
+License: {{{LICENSETYPE}}}
+Group: Development/Libraries
+URL: {{{PROJECTURL}}}
+{{#each SOURCES}}
+{{{.}}}
+{{/each}}
+BuildRequires: nodejs-packaging
+BuildArch: noarch
+ExclusiveArch: %{nodejs_arches} noarch
+
+Provides: npm(%{npm_name}) = %{version}
+{{#each PROVIDES}}
+Provides: bundled(npm({{{name}}})) = {{{version}}}
+{{/each}}
+AutoReq: no
+AutoProv: no
+
+%define npm_cache_dir /tmp/npm_cache_%{name}-%{version}-%{release}
+
+%description
+%{summary}
+
+%prep
+mkdir -p %{npm_cache_dir}
+for tgz in %{sources}; do
+  echo $tgz | grep -q registry.npmjs.org || npm cache add --cache %{npm_cache_dir} $tgz
+done
+%setup -T -q -a {{{PROVIDES.length}}} -D -n %{npm_cache_dir}
+
+%build
+npm install --cache-min Infinity --cache %{npm_cache_dir} --no-shrinkwrap --no-optional --global-style true %{npm_name}@%{version}
+
+%install
+mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
+cp -pfr node_modules/%{npm_name}/node_modules %{buildroot}%{nodejs_sitelib}/%{npm_name}
+{{#each COPYFILES}}
+cp -pfr node_modules/%{npm_name}/{{&.}} %{buildroot}%{nodejs_sitelib}/%{npm_name}
+{{/each}}
+{{#if BINARIES}}
+
+mkdir -p %{buildroot}%{_bindir}/
+{{/if}}
+{{#each BINARIES}}
+chmod 0755 %{buildroot}%{nodejs_sitelib}/%{npm_name}/{{{this}}}
+ln -sf %{nodejs_sitelib}/%{npm_name}/{{{this}}} %{buildroot}%{_bindir}/{{{@key}}}
+{{/each}}
+
+%clean
+rm -rf %{buildroot} %{npm_cache_dir}
+
+%files
+%{nodejs_sitelib}/%{npm_name}
+{{#each BINARIES}}
+%{_bindir}/{{{@key}}}
+{{/each}}
+{{#each LICENSEFILES}}
+%license node_modules/%{npm_name}/{{{.}}}
+{{/each}}
+{{#each DOCFILES}}
+%doc node_modules/%{npm_name}/{{{.}}}
+{{/each}}
+
+%changelog

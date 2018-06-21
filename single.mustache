@@ -1,0 +1,60 @@
+%global npm_name {{{NAME}}}
+%global enable_tests 1
+
+Name: nodejs-%{npm_name}
+Version: {{{VERSION}}}
+Release: {{{RELEASE}}}%{?dist}
+Summary: {{{SUMMARY}}}
+License: {{{LICENSETYPE}}}
+Group: Development/Libraries
+URL: {{{PROJECTURL}}}
+{{#each SOURCES}}
+{{{.}}}
+{{/each}}
+BuildRequires: nodejs-packaging
+{{#each DEPENDENCIES}}
+Requires: {{{.}}}
+{{/each}}
+BuildArch: noarch
+ExclusiveArch: %{nodejs_arches} noarch
+
+%description
+%{summary}
+
+%prep
+%setup -q -n package
+
+%install
+mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
+{{#each COPYFILES}}
+cp -pfr {{{.}}} %{buildroot}%{nodejs_sitelib}/%{npm_name}
+{{/each}}
+{{#if BINARIES}}
+
+mkdir -p %{buildroot}%{_bindir}
+{{/if}}
+{{#each BINARIES}}
+chmod 0755 %{buildroot}%{nodejs_sitelib}/%{npm_name}/{{{this}}}
+ln -sf %{nodejs_sitelib}/%{npm_name}/{{{this}}} %{buildroot}%{_bindir}/{{{@key}}}
+{{/each}}
+
+%nodejs_symlink_deps
+
+%if 0%{?enable_tests}
+%check
+%{nodejs_symlink_deps} --check
+%endif
+
+%files
+%{nodejs_sitelib}/%{npm_name}
+{{#each BINARIES}}
+%{_bindir}/{{{@key}}}
+{{/each}}
+{{#each LICENSEFILES}}
+%license {{{.}}}
+{{/each}}
+{{#each DOCFILES}}
+%doc {{{.}}}
+{{/each}}
+
+%changelog
