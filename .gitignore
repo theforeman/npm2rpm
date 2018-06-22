@@ -38,3 +38,5 @@ jspm_packages
 
 # generated files
 /npm2rpm
+
+package-lock.json
