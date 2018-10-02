@@ -30,6 +30,9 @@ build/Release
 node_modules
 jspm_packages
 
+# Don't store the installed dependencies
+package-lock.json
+
 # Optional npm cache directory
 .npm
 
