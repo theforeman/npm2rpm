@@ -1,4 +1,4 @@
-#! /usr/bin/env node
+#!/usr/bin/env node
 // NodeJS core
 var async = require('async');
 var fs = require('fs');
@@ -34,7 +34,7 @@ if (npm2rpm.strategy === undefined) {
 }
 
 if (npm2rpm.template === undefined) {
-  npm2rpm.template = path.join(__dirname, '/../' + npm2rpm.strategy + '.mustache');
+  npm2rpm.template = path.join(__dirname, '..', npm2rpm.strategy + '.mustache');
 }
 
 var tar_extract = helpers.extractTar(helpers.downloadFromNPM(npm2rpm.name, npm2rpm.version));
