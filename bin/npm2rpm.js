@@ -1,17 +1,20 @@
 #!/usr/bin/env node
 // NodeJS core
-var async = require('async');
-var fs = require('fs');
+const async = require('async');
+const fs = require('fs');
+const tmp = require('tmp');
 const execSync = require('child_process').execSync;
 const path = require('path');
 // NPM deps
-var ls = require('npm-remote-ls').ls
-var config = require('npm-remote-ls').config
-var colors = require('colors');
-var npm2rpm = require('commander');
-var normalizeData = require('normalize-package-data');
-var helpers = require('../lib/npm_helpers.js');
-var specFileGenerator = require('../lib/spec_file_generator.js');
+const request = require('request');
+const tar = require('tar');
+const npm_remote_ls = require('npm-remote-ls');
+const colors = require('colors');
+const npm2rpm = require('commander');
+const normalizeData = require('normalize-package-data');
+// Our own deps
+const {npmUrl, rsplit, getCacheFilename, getRpmPackageName} = require('../lib/npm_helpers.js');
+const specFileGenerator = require('../lib/spec_file_generator.js');
 
 console.log('---- npm2rpm ----'.green.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
@@ -21,6 +24,7 @@ npm2rpm
 .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
 .option('-r, --release [release]', "RPM's release", 1)
 .option('-t, --template [template]', "RPM .spec template to use")
+.option('-o, --output [directory]', "Directory to output files to")
 .parse(process.argv);
 
 // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
@@ -37,82 +41,82 @@ if (npm2rpm.template === undefined) {
   npm2rpm.template = path.join(__dirname, '..', npm2rpm.strategy + '.mustache');
 }
 
-var tar_extract = helpers.extractTar(helpers.downloadFromNPM(npm2rpm.name, npm2rpm.version));
-tar_extract['stream'].on('error', (error) => {
-	console.log('ERROR');
-	console.log(error);
+if (npm2rpm.output === undefined) {
+  console.log(' - Undefined output directory - defaulting to npm2rpm'.bold)
+  npm2rpm.output = 'npm2rpm';
+}
+
+const url = npmUrl(npm2rpm.name, npm2rpm.version);
+console.log(' - Starting npm module download: '.bold + url );
+const tmpDir = createTempDir();
+console.log(' - Unpacking in '.bold + tmpDir + ' ...'.bold);
+const tar_stream = request.get(url).pipe(tar.extract({cwd: tmpDir}))
+tar_stream.on('error', (error) => {
+  console.log('ERROR'.red, '-', error.message);
+  if (error.code === 'Z_DATA_ERROR') {
+    console.log('Are you sure that the module name and version can be found on npmjs.org?'.bold);
+  }
 })
-tar_extract['stream'].on('finish', () => {
+tar_stream.on('finish', () => {
   console.log(' - Finished extracting for '.bold + npm2rpm.name);
   console.log(' - Reading package.json for '.bold + npm2rpm.name);
-  var npm_module = JSON.parse(fs.readFileSync(tar_extract['location'] + '/package/package.json'));
-  normalizeData(npm_module, msg => console.error('Warning:', msg));
+  const npm_module = readPackageJson(path.join(tmpDir, 'package', 'package.json'),
+    msg => console.warn('Warning:', msg));
   console.log(' - Finished reading package.json for '.bold + npm2rpm.name);
 
-  var files = fs.readdirSync(tar_extract['location'] + '/package/');
+  const files = fs.readdirSync(path.join(tmpDir, 'package'));
+
+  if (!fs.existsSync(npm2rpm.output)) {
+    fs.mkdirSync(npm2rpm.output);
+  }
 
   if (npm2rpm.strategy === 'bundle') {
-    config({
+    npm_remote_ls.config({
       development: false,
       optional: false
     });
 
     console.log(' - Fetching flattened list of production dependencies for '.bold + npm_module.name);
-    ls(npm_module.name, npm_module.version, true, (deps) => {
+    npm_remote_ls.ls(npm_module.name, npm_module.version, true, (deps) => {
       // Dependencies come as name@version but sometimes as @name@version
-      var dependencies = deps.map(dependency => {
-        // Work around the lack of rsplit
-        var index = dependency.lastIndexOf('@');
-        return [dependency.slice(0, index), dependency.slice(index + 1)];
-      });
-      var spec_file = specFileGenerator(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template);
+      const dependencies = deps.map(dependency => rsplit(dependency, '@'));
 
-      writeSpecFile(npm_module.name, spec_file);
+      writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output);
 
-      console.log(' - Generating npm cache tgz... '.bold)
-      createNpmCacheTar(npm_module);
-      downloadDependencies(dependencies);
+      if (dependencies.length > 0) {
+        console.log(' - Generating npm cache tgz... '.bold)
+        createNpmCacheTar(npm_module, npm2rpm.output);
+      }
     });
   } else {
-    var spec_file = specFileGenerator(npm_module, files, [], npm2rpm.release, npm2rpm.template);
-    writeSpecFile(npm_module.name, spec_file);
-    downloadDependencies([[npm_module.name, npm_module.version]])
+    writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output);
   }
 })
 
-function writeSpecFile(name, content) {
-  helpers.ensureDirSync('npm2rpm');
-  helpers.ensureDirSync('npm2rpm/SOURCES');
-  helpers.ensureDirSync('npm2rpm/SPECS');
-  fs.writeFile('npm2rpm/SPECS/nodejs-' + name + '.spec', content);
+function writeSpecFile(npmModule, files, dependencies, release, template, specDir) {
+  const content = specFileGenerator(npmModule, files, dependencies, release, template);
+  const filename = path.join(specDir, `${getRpmPackageName(npmModule.name)}.spec`);
+  fs.writeFileSync(filename, content);
 }
 
-function downloadDependencies(dependencies) {
-  async.each(dependencies, (file, callback) => {
-    var filename = 'npm2rpm/SOURCES/' + file[0] + '-' + file[1] + '.tgz';
-    helpers.ensureDirSync(path.dirname(filename));
-    var download_location = fs.createWriteStream(filename);
-    var download_pipe = helpers.downloadFromNPM(file[0], file[1]).pipe(download_location);
-    download_pipe.on('finish', () => {
-      console.log('   - ' + file[0] + '-' + file[1] + ' finished'.green);
-      callback(null)
-    });
-    download_pipe.on('error', (error) => {
-      console.log('   - ' + file[0] + '-' + file[1] + ' failed to download'.red);
-      callback(error);
-    })
-  }, (err) => {
-    if(err) {
-      console.log('Error: '.bold.red + err + ' failed to download'.bold.red);
-    } else {
-      console.log('All files have been processed successfully'.white.underline);
-      console.log('Check out npm2rpm/SOURCES and npm2rpm/SPECS for the results.');
-    }
+function createNpmCacheTar(npm_module, outputDir) {
+  const command = path.join(__dirname, 'generate_npm_tarball.sh');
+  const pkg = `${npm_module.name}@${npm_module.version}`;
+  const filename = path.join(outputDir, getCacheFilename(getRpmPackageName(npm_module.name), npm_module.version));
+  execSync([command, pkg, filename].join(' '), {stdio: [0,1,2]});
+}
+
+function createTempDir() {
+  const tmpDir = tmp.dirSync({
+    mode: 6644,
+    prefix: 'npm2rpm-',
+    keep: true
   });
+  return tmpDir.name;
 }
 
-function createNpmCacheTar(npm_module) {
-  var filename = npm_module.name + '-' + npm_module.version + '-registry.npmjs.org.tgz'
-  execSync([path.join(__dirname, '/generate_npm_tarball.sh'), npm_module.name + '@' + npm_module.version,
-           ' ', path.join('npm2rpm/SOURCES/', filename)].join(' '), {stdio:[0,1,2]});
+function readPackageJson(filename, warn) {
+  const packageData = JSON.parse(fs.readFileSync(filename));
+  normalizeData(packageData, warn);
+  return packageData;
 }

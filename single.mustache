@@ -1,7 +1,6 @@
 %global npm_name {{{NAME}}}
-%global enable_tests 1
 
-Name: nodejs-%{npm_name}
+Name: {{{RPM_PACKAGE_NAME}}}
 Version: {{{VERSION}}}
 Release: {{{RELEASE}}}%{?dist}
 Summary: {{{SUMMARY}}}
@@ -38,12 +37,12 @@ chmod 0755 %{buildroot}%{nodejs_sitelib}/%{npm_name}/{{{this}}}
 ln -sf %{nodejs_sitelib}/%{npm_name}/{{{this}}} %{buildroot}%{_bindir}/{{{@key}}}
 {{/each}}
 
+{{^PACKAGE_NAME_HAS_SLASH}}
 %nodejs_symlink_deps
 
-%if 0%{?enable_tests}
 %check
 %{nodejs_symlink_deps} --check
-%endif
+{{/PACKAGE_NAME_HAS_SLASH}}
 
 %files
 %{nodejs_sitelib}/%{npm_name}

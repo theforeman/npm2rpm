@@ -7,18 +7,31 @@ npm2rpm
 
 npm2rpm - convert npm modules to RPM packages
 
-  Usage: npm2rpm [options]
+```console
+Usage: npm2rpm [options]
 
-  Options:
+Options:
 
-    -h, --help                 output usage information
-    -n, --name <name>          NodeJS module name
-    -s, --strategy [strategy]  Strategy to build the npm packages
-    -v, --version [version]    module version in X.Y.Z format
-    -r, --release [release]    RPM's release
-    -t, --template [template]  RPM .spec template to use
+  -n, --name <name>          NodeJS module name
+  -v, --version <version>    module version in X.Y.Z format
+  -s, --strategy [strategy]  Strategy to build the npm packages
+  -r, --release [release]    RPM's release (default: 1)
+  -t, --template [template]  RPM .spec template to use
+  -o, --output [directory]   Directory to output files to
+  -h, --help                 output usage information
+```
 
-Example: ./bin/npm2rpm.js -n webpack -v 1.13.1 -> creates the spec and downloads sources in npm2rpm/
+To create `npm2rpm/nodejs-webpack.spec`:
+
+```console
+./bin/npm2rpm.js -n webpack -v 4.20.2
+```
+
+To download the sources you can use [spectool](https://fedoraproject.org/wiki/Rpmdevtools):
+
+```console
+spectool --get-files nodejs-webpack.spec
+```
 
 ## How?
 
@@ -39,18 +52,18 @@ I took this idea from [njs2rpm](https://github.com/sfreire/njs2rpm). If you stil
 
 The main idea is to include the node_modules directory (dependency tree) in every RPM package.
 
-    +--------+----------------------+---------------------+-----------------------------+
-    |  Type  |       RPM name       |      Provides       |          Requires           |
-    +--------+----------------------+---------------------+-----------------------------+
-    | Single | nodejs-<name>        | npm(<name>)         | npm(<dep1>)                 |
-    |        |                      |                     | ...                         |
-    |        |                      |                     | npm(<depM>)                 |
-    | Bundle | nodejs-bundle-<name> | npm(<name>)         | (no deps as Requires)       |
-    |        |                      |                     |                             |
-    |        |                      | bundled-npm(<dep1>) |                             |
-    |        |                      | ...                 |                             |
-    |        |                      | bundled-npm(<depN>) |                             |
-    +--------+----------------------+---------------------+-----------------------------+
+    +--------+----------------------+----------------------+-----------------------------+
+    |  Type  |       RPM name       |      Provides        |          Requires           |
+    +--------+----------------------+----------------------+-----------------------------+
+    | Single | nodejs-<name>        | npm(<name>)          | npm(<dep1>)                 |
+    |        |                      |                      | ...                         |
+    |        |                      |                      | npm(<depM>)                 |
+    | Bundle | nodejs-bundle-<name> | npm(<name>)          | (no deps as Requires)       |
+    |        |                      |                      |                             |
+    |        |                      | bundled(npm(<dep1>)) |                             |
+    |        |                      | ...                  |                             |
+    |        |                      | bundled(npm(<depN>)) |                             |
+    +--------+----------------------+----------------------+-----------------------------+
 
 This is OK(ish) as you solve the problem of conflicting dependencies by bundling dependencies. Furthermore other applications can depende on your system library by having a `Requires: npm(name)` However it still seems wrong to put these libraries in your `%{nodejs_sitelib}` - it's like your installing stuff on the user system but they don't really know about these bundled deps or any security they may have. So I understand why [Fedora guidelines](https://fedoraproject.org/wiki/Bundled_Libraries?rd=Packaging:Bundled_Libraries) discourage this kind of bundling for system packages.
 
@@ -90,4 +103,3 @@ Thanks to [njs2rpm](https://github.com/sfreire/njs2rpm)(abandoned) and [foreman-
 
 ##### TODOs:
   - Support peerDependencies with bundled packages
-  - Actually build RPM (currently it only downloads sources & writes spec)
