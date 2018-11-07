@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // NodeJS core
-const async = require('async');
 const fs = require('fs');
 const tmp = require('tmp');
 const execSync = require('child_process').execSync;
