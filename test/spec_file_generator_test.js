@@ -5,7 +5,7 @@ describe('dependenciesToRequires', () => {
   var d2r = specFileGenerator.dependenciesToRequires;
   it('handles a single version number', () => {
     var deps = {'foo': '1.2.3'};
-    assert.deepEqual(d2r(deps), ['npm(foo) =1.2.3']);
+    assert.deepEqual(d2r(deps), ['npm(foo) = 1.2.3']);
   });
 
   it('handles comparators', () => {
@@ -17,7 +17,7 @@ describe('dependenciesToRequires', () => {
 
     assert.deepEqual(d2r(lt),  ['npm(foo) <1.2.3']);
     assert.deepEqual(d2r(lte), ['npm(foo) <=1.2.3']);
-    assert.deepEqual(d2r(eq),  ['npm(foo) =1.2.3']);
+    assert.deepEqual(d2r(eq),  ['npm(foo) = 1.2.3']);
     assert.deepEqual(d2r(gt),  ['npm(foo) >1.2.3']);
     assert.deepEqual(d2r(gte), ['npm(foo) >=1.2.3']);
   });
