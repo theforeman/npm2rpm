@@ -15,11 +15,13 @@ const normalizeData = require('normalize-package-data');
 const {npmUrl, rsplit, getCacheFilename, getRpmPackageName} = require('../lib/npm_helpers.js');
 const specFileGenerator = require('../lib/spec_file_generator.js');
 
+const currentVersion = require('../package.json').version;
+
 console.log('---- npm2rpm ----'.green.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
 npm2rpm
 .option('-n, --name <name>', 'NodeJS module name')
-.option('-v, --version <version>', 'module version in X.Y.Z format')
+.version(currentVersion, '-v, --version')
 .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
 .option('-r, --release [release]', "RPM's release", 1)
 .option('-t, --template [template]', "RPM .spec template to use")
