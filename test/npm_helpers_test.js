@@ -16,7 +16,7 @@ describe('getRpmPackageName', () => {
 
   it('works with a namespaces package', () => {
     const name = npmHelpers.getRpmPackageName('@group/foo');
-    assert.equal(name, 'nodejs-foo');
+    assert.equal(name, 'nodejs-group-foo');
   });
 });
 
