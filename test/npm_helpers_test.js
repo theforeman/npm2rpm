@@ -39,7 +39,12 @@ describe('rsplit', () => {
 
 describe('getCacheFilename', () => {
   it('works without occurance', () => {
-    const filename = npmHelpers.getCacheFilename('foo', '1.2.3');
-    assert.equal(filename, 'foo-1.2.3-registry.npmjs.org.tgz');
+    const filename = npmHelpers.getCacheFilename('foo', '1.0.0');
+    assert.equal(filename, 'foo-1.0.0-registry.npmjs.org.tgz');
+  });
+
+  it('works with macros', () => {
+    const filename = npmHelpers.getCacheFilename('foo', '%{version}');
+    assert.equal(filename, 'foo-%{version}-registry.npmjs.org.tgz');
   });
 });

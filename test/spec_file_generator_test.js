@@ -112,4 +112,23 @@ describe('dependenciesToRequires', () => {
     var invalid = {'foo': 'a.b.c'};
     assert.deepEqual(d2r(invalid), ['npm(foo)']);
   });
+
+  it('handles scl prefix', () => {
+    var deps = {'foo': '1.2.3'};
+    assert.deepEqual(d2r(deps, true), ['%{scl_prefix}npm(foo) = 1.2.3']);
+  });
+
+  it('handles comparators with scl prefix', () => {
+    var lt  = {'foo': '< 1.2.3'};
+    var lte = {'foo': '<= 1.2.3'};
+    var eq  = {'foo': '= 1.2.3'};
+    var gt  = {'foo': '> 1.2.3'};
+    var gte = {'foo': '>= 1.2.3'};
+
+    assert.deepEqual(d2r(lt, true),  ['%{scl_prefix}npm(foo) < 1.2.3']);
+    assert.deepEqual(d2r(lte, true), ['%{scl_prefix}npm(foo) <= 1.2.3']);
+    assert.deepEqual(d2r(eq, true),  ['%{scl_prefix}npm(foo) = 1.2.3']);
+    assert.deepEqual(d2r(gt, true),  ['%{scl_prefix}npm(foo) > 1.2.3']);
+    assert.deepEqual(d2r(gte, true), ['%{scl_prefix}npm(foo) >= 1.2.3']);
+  });
 });
