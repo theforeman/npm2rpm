@@ -1,6 +1,9 @@
+%{?scl:%scl_package nodejs-%{npm_name}}
+%{!?scl:%global pkg_name %{name}}
+
 %global npm_name {{{NAME}}}
 
-Name: {{{RPM_PACKAGE_NAME}}}
+Name: %{?scl_prefix}{{{RPM_PACKAGE_NAME}}}
 Version: {{{VERSION}}}
 Release: {{{RELEASE}}}%{?dist}
 Summary: {{{SUMMARY}}}
@@ -10,12 +13,15 @@ URL: {{{PROJECTURL}}}
 {{#each SOURCES}}
 {{{.}}}
 {{/each}}
+%if 0%{?!scl:1}
 BuildRequires: nodejs-packaging
+%endif
 {{#each DEPENDENCIES}}
 Requires: {{{.}}}
 {{/each}}
 BuildArch: noarch
 ExclusiveArch: %{nodejs_arches} noarch
+Provides: %{?scl_prefix}npm(%{npm_name}) = %{version}
 
 %description
 %{summary}
