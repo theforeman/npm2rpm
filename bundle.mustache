@@ -13,9 +13,8 @@ URL: {{{PROJECTURL}}}
 {{#each SOURCES}}
 {{{.}}}
 {{/each}}
-%if 0%{?scl:1}
 BuildRequires: %{?scl_prefix_nodejs}npm
-%else
+%if 0%{!?scl:1}
 BuildRequires: nodejs-packaging
 %endif
 BuildArch: noarch
