@@ -4,7 +4,9 @@
   "description": "Convert npm packages to rpm packages",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -33,7 +35,8 @@
     "request": "^2.81.0",
     "semver": "^5.4.1",
     "tar": "^4.0.0",
-    "tmp": "^0.0.28"
+    "tmp": "^0.0.28",
+    "snyk": "^1.319.0"
   },
   "devDependencies": {
     "mocha": ">= 3.0.2 < 6.0"
@@ -43,5 +46,6 @@
   "bin": {
     "npm2rpm": "bin/npm2rpm.js",
     "packagejson2rpm": "bin/packagejson2rpm.js"
-  }
+  },
+  "snyk": true
 }
