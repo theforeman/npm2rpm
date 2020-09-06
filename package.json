@@ -4,7 +4,10 @@
   "description": "Convert npm packages to rpm packages",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "commit": "git-cz",
+    "commitlint": "commitlint -e -e",
+    "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
@@ -36,7 +39,13 @@
     "tmp": "^0.0.28"
   },
   "devDependencies": {
-    "mocha": ">= 3.0.2 < 6.0"
+    "@commitlint/cli": "^9.1.2",
+    "@commitlint/config-conventional": "^9.1.2",
+    "commitizen": "^4.2.1",
+    "commitlint-config-cz": "^0.13.2",
+    "cz-conventional-changelog": "^3.3.0",
+    "mocha": ">= 3.0.2 < 6.0",
+    "semantic-release": "^17.1.1"
   },
   "homepage": "https://github.com/dLobatog/npm2rpm#readme",
   "preferGlobal": true,
