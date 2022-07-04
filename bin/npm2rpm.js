@@ -90,11 +90,11 @@ tar_stream.on('finish', () => {
       // Dependencies come as name@version but sometimes as @name@version
       const dependencies = deps.map(dependency => rsplit(dependency, '@'));
 
-      writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.scl);
+      specfile = writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.scl);
 
       if (dependencies.length > 0) {
         console.log(' - Generating npm cache tgz... '.bold)
-        createNpmCacheTar(npm_module, npm2rpm.output, npm2rpm.useNodejs6);
+        createNpmCacheTar(npm_module, npm2rpm.output, npm2rpm.useNodejs6, specfile);
       }
     });
   } else {
@@ -106,13 +106,14 @@ function writeSpecFile(npmModule, files, dependencies, release, template, specDi
   const content = specFileGenerator(npmModule, files, dependencies, release, template, scl);
   const filename = path.join(specDir, `${getRpmPackageName(npmModule.name)}.spec`);
   fs.writeFileSync(filename, content);
+  return filename;
 }
 
-function createNpmCacheTar(npm_module, outputDir, useNodejs6) {
+function createNpmCacheTar(npm_module, outputDir, useNodejs6, specfile) {
   const command = path.join(__dirname, 'generate_npm_tarball.sh');
   const pkg = `${npm_module.name}@${npm_module.version}`;
   const filename = path.join(outputDir, getCacheFilename(getRpmPackageName(npm_module.name), npm_module.version));
-  execSync([command, pkg, filename, useNodejs6].join(' '), {stdio: [0,1,2]});
+  execSync([command, pkg, filename, useNodejs6, specfile].join(' '), {stdio: [0,1,2]});
 }
 
 function createTempDir() {
