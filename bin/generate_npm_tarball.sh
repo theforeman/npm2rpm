@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 if [ $# -lt 2 ]; then
   echo "usage: $0 PACKAGE[@VERSION] OUTPUT.TGZ [USE NODEJS 6] [SPECFILE_FOR_PURGE]"
   exit 1
@@ -8,6 +10,7 @@ package=$1
 output=$(pwd)/$2
 usenodejs6=${3:-false}
 specfile="$4"
+legacypeerdeps=${5:-false}
 wd=$(mktemp -d)
 trap "rm -rf '$wd'" EXIT INT TERM
 
@@ -29,7 +32,11 @@ create_cache() {
 
     (cd $wd/cache && find -type f | sort) > $wd/cache-primed
 
-    npm install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+    if [[ $legacypeerdeps == true ]];then
+      npm install --legacy-peer-deps --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+    else
+      npm install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+    fi
 
     (cd $wd/cache && find -type f | sort) > $wd/cache-full
 
