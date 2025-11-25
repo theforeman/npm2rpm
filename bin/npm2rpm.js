@@ -12,67 +12,88 @@ const colors = require('colors');
 const npm2rpm = require('commander');
 const normalizeData = require('normalize-package-data');
 // Our own deps
-const {npmUrl, rsplit, getCacheFilename, getRpmPackageName} = require('../lib/npm_helpers.js');
+const {npmUrl, rsplit, getCacheFilename, getRpmPackageName, npmFile} = require('../lib/npm_helpers.js');
 const specFileGenerator = require('../lib/spec_file_generator.js');
 
-console.log('---- npm2rpm ----'.green.bold);
-console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
-npm2rpm
-.option('-n, --name <name>', 'NodeJS module name')
-.option('-v, --version <version>', 'module version in X.Y.Z format')
-.option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
-.option('-r, --release [release]', "RPM's release", 1)
-.option('-t, --template [template]', "RPM .spec template to use")
-.option('-6, --use-nodejs6 [useNodejs6]', "If wanting to generate cache tarball for NodeJS 6")
-.option('-o, --output [directory]', "Directory to output files to")
-.option('-c, --scl [scl]', "Adds scl prefixes to spec file")
-.option('-p, --use-legacy-peer-deps [useLegacyPeerDeps]', "Adds --legacy-peer-deps during npm install")
-.parse(process.argv);
+async function main() {
+  console.log('---- npm2rpm ----'.green.bold);
+  console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
+  npm2rpm
+  .option('-n, --name <name>', 'NodeJS module name')
+  .option('-l, --local <local tar file.>', 'Predownloaded tar file')
+  .option('-d, --download', 'Only download tarball')
+  .option('-v, --version <version>', 'module version in X.Y.Z format')
+  .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
+  .option('-r, --release [release]', "RPM's release", 1)
+  .option('-t, --template [template]', "RPM .spec template to use")
+  .option('-6, --use-nodejs6 [useNodejs6]', "If wanting to generate cache tarball for NodeJS 6")
+  .option('-o, --output [directory]', "Directory to output files to")
+  .option('--output-tar-dir [outputTarDirectory]', "Directory to output files to")
+  .option('-c, --scl [scl]', "Adds scl prefixes to spec file")
+  .option('-p, --use-legacy-peer-deps [useLegacyPeerDeps]', "Adds --legacy-peer-deps during npm install")
+  .parse(process.argv);
 
-// If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
-if (typeof(npm2rpm.name) === 'function' || typeof(npm2rpm.version) === 'function') {
-  npm2rpm.help();
-}
-
-if (npm2rpm.strategy === undefined) {
-  console.log(' - Undefined strategy - defaulting to single'.bold)
-  npm2rpm.strategy = 'single';
-}
-
-if (npm2rpm.template === undefined) {
-  npm2rpm.template = path.join(__dirname, '..', npm2rpm.strategy + '.mustache');
-}
-
-if (npm2rpm.output === undefined) {
-  console.log(' - Undefined output directory - defaulting to npm2rpm'.bold)
-  npm2rpm.output = 'npm2rpm';
-}
-
-if (npm2rpm.useNodejs6 === undefined) {
-  npm2rpm.useNodejs6 = false;
-}
-
-if (npm2rpm.scl === undefined) {
-  npm2rpm.scl = false;
-}
-
-if (npm2rpm.useLegacyPeerDeps === undefined) {
-  npm2rpm.useLegacyPeerDeps = false;
-}
-
-const url = npmUrl(npm2rpm.name, npm2rpm.version);
-console.log(' - Starting npm module download: '.bold + url );
-const tmpDir = createTempDir();
-console.log(' - Unpacking in '.bold + tmpDir + ' ...'.bold);
-const tar_stream = request.get(url).pipe(tar.extract({cwd: tmpDir}))
-tar_stream.on('error', (error) => {
-  console.log('ERROR'.red, '-', error.message);
-  if (error.code === 'Z_DATA_ERROR') {
-    console.log('Are you sure that the module name and version can be found on npmjs.org?'.bold);
+  // If a name is not provided, then npm2rpm.name defaults to calling 'commander' name() function
+  if (typeof(npm2rpm.name) === 'function' || typeof(npm2rpm.version) === 'function') {
+    npm2rpm.help();
   }
-})
-tar_stream.on('finish', () => {
-  console.log(' - Finished extracting for '.bold + npm2rpm.name);
+
+  if (npm2rpm.strategy === undefined) {
+    console.log(' - Undefined strategy - defaulting to single'.bold)
+    npm2rpm.strategy = 'single';
+  }
+
+  if (npm2rpm.template === undefined) {
+    npm2rpm.template = path.join(__dirname, '..', npm2rpm.strategy + '.mustache');
+  }
+
+  if (npm2rpm.output === undefined) {
+    console.log(' - Undefined output directory - defaulting to npm2rpm'.bold)
+    npm2rpm.output = 'npm2rpm';
+  }
+
+  if (npm2rpm.useNodejs6 === undefined) {
+    npm2rpm.useNodejs6 = false;
+  }
+
+  if (npm2rpm.scl === undefined) {
+    npm2rpm.scl = false;
+  }
+
+  if (npm2rpm.useLegacyPeerDeps === undefined) {
+    npm2rpm.useLegacyPeerDeps = false;
+  }
+
+  const tmpDir = createTempDir();
+  outputTarDir = tmpDir;
+
+  if (npm2rpm.outputTarDir !== undefined) {
+    outputTarDir = npm2rpm.outputTarDir;
+    
+  }
+
+  tar_file = "";
+  if (npm2rpm.local === undefined) {
+    const url = npmUrl(npm2rpm.name, npm2rpm.version);
+    tar_file = path.join(outputTarDir, npmFile(npm2rpm.name, npm2rpm.version));
+    
+    console.log(' - Destination: '.bold + tar_file);
+    await downloadFile(url, tar_file)
+      .then(() => console.log(' - File downloaded successfully'.bold))
+      .catch(error => console.error('Error downloading file:', error));
+  } else {
+    tar_file = npm2rpm.local;
+  }
+
+  
+
+  
+  if (npm2rpm.download !== undefined) {
+    console.log(' - Downloading tarball only, exiting'.bold);
+    return;
+  }
+
+  await unpackTarFile(tar_file, tmpDir)
   console.log(' - Reading package.json for '.bold + npm2rpm.name);
   const npm_module = readPackageJson(path.join(tmpDir, 'package', 'package.json'),
     msg => console.warn('Warning:', msg));
@@ -102,10 +123,44 @@ tar_stream.on('finish', () => {
         createNpmCacheTar(npm_module, npm2rpm.output, npm2rpm.useNodejs6, specfile, npm2rpm.useLegacyPeerDeps);
       }
     });
-  } else {
-    writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.scl, npm2rpm.useLegacyPeerDeps);
-  }
-})
+    } else {
+      writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.scl, npm2rpm.useLegacyPeerDeps);
+    }
+
+}
+
+
+async function downloadFile(url, destination) {
+  return new Promise((resolve, reject) => {
+      console.log(' - Starting npm module download from url: '.bold + url );
+      const file = fs.createWriteStream(destination);
+      request.get(url).pipe(file);
+      file.on('finish', () => {
+              file.close();
+              resolve();
+          });
+      file.on('error', (err) => {reject(err); });
+  });
+}
+
+async function unpackTarFile(tar_file, tmpDir) {
+  return new Promise((resolve, reject) => {
+    console.log(' - Unpacking in '.bold + tmpDir + ' ...'.bold);
+    const tar_stream = fs.createReadStream(tar_file).pipe(tar.extract({cwd: tmpDir}))
+  
+    tar_stream.on('error', (error) => {
+      console.log('ERROR'.red, '-', error.message);
+      if (error.code === 'Z_DATA_ERROR') {
+        console.log('Are you sure that the module name and version can be found on npmjs.org?'.bold);
+      }
+      reject(error);
+    });
+    tar_stream.on('finish', () => {
+      console.log(' - Finished extracting for '.bold + npm2rpm.name);
+      resolve();
+    });
+  });
+}
 
 function writeSpecFile(npmModule, files, dependencies, release, template, specDir, scl, use_legacy_peer_deps) {
   const content = specFileGenerator(npmModule, files, dependencies, release, template, scl, use_legacy_peer_deps);
@@ -135,3 +190,5 @@ function readPackageJson(filename, warn) {
   normalizeData(packageData, warn);
   return packageData;
 }
+
+main();
