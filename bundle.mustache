@@ -22,7 +22,7 @@ Provides: bundled(npm({{{name}}})) = {{{version}}}
 AutoReq: no
 AutoProv: no
 
-%define npm_cache_dir /tmp/npm_cache_%{name}-%{version}-%{release}
+%define npm_cache_dir npm_cache_%{name}-%{version}-%{release}
 
 %description
 %{summary}
@@ -36,7 +36,7 @@ done
 %setup -T -q -a {{{PROVIDES.length}}} -D -n %{npm_cache_dir}
 
 %build
-npm install {{{LEGACY_PEER_DEPS}}}--offline --cache %{npm_cache_dir} --package-lock false --omit optional --install-strategy shallow %{npm_name}@%{version}
+npm install {{{LEGACY_PEER_DEPS}}}--offline --cache %{_builddir}/%{npm_cache_dir} --package-lock false --omit optional --install-strategy shallow %{npm_name}@%{version}
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
