@@ -10,7 +10,7 @@ URL: {{{PROJECTURL}}}
 {{#each SOURCES}}
 {{{.}}}
 {{/each}}
-BuildRequires: npm
+BuildRequires: npm >= 7
 BuildRequires: nodejs-packaging
 BuildArch: noarch
 ExclusiveArch: %{nodejs_arches} noarch
@@ -36,7 +36,7 @@ done
 %setup -T -q -a {{{PROVIDES.length}}} -D -n %{npm_cache_dir}
 
 %build
-npm install {{{LEGACY_PEER_DEPS}}}--cache-min Infinity --cache %{npm_cache_dir} --no-shrinkwrap --no-optional --global-style true %{npm_name}@%{version}
+npm install {{{LEGACY_PEER_DEPS}}}--offline --cache %{npm_cache_dir} --package-lock false --omit optional --install-strategy shallow %{npm_name}@%{version}
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
