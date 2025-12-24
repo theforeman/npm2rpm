@@ -23,7 +23,6 @@ npm2rpm
 .option('-s, --strategy [strategy]', "Strategy to build the npm packages", /^(single|bundle)$/i)
 .option('-r, --release [release]', "RPM's release", 1)
 .option('-t, --template [template]', "RPM .spec template to use")
-.option('-6, --use-nodejs6 [useNodejs6]', "If wanting to generate cache tarball for NodeJS 6")
 .option('-o, --output [directory]', "Directory to output files to")
 .option('-p, --use-legacy-peer-deps [useLegacyPeerDeps]', "Adds --legacy-peer-deps during npm install")
 .parse(process.argv);
@@ -45,10 +44,6 @@ if (npm2rpm.template === undefined) {
 if (npm2rpm.output === undefined) {
   console.log(' - Undefined output directory - defaulting to npm2rpm'.bold)
   npm2rpm.output = 'npm2rpm';
-}
-
-if (npm2rpm.useNodejs6 === undefined) {
-  npm2rpm.useNodejs6 = false;
 }
 
 if (npm2rpm.useLegacyPeerDeps === undefined) {
@@ -94,7 +89,7 @@ tar_stream.on('finish', () => {
 
       if (dependencies.length > 0) {
         console.log(' - Generating npm cache tgz... '.bold)
-        createNpmCacheTar(npm_module, npm2rpm.output, npm2rpm.useNodejs6, specfile, npm2rpm.useLegacyPeerDeps);
+        createNpmCacheTar(npm_module, npm2rpm.output, specfile, npm2rpm.useLegacyPeerDeps);
       }
     });
   } else {
@@ -109,11 +104,11 @@ function writeSpecFile(npmModule, files, dependencies, release, template, specDi
   return filename;
 }
 
-function createNpmCacheTar(npm_module, outputDir, useNodejs6, specfile, useLegacyPeerDeps) {
+function createNpmCacheTar(npm_module, outputDir, specfile, useLegacyPeerDeps) {
   const command = path.join(__dirname, 'generate_npm_tarball.sh');
   const pkg = `${npm_module.name}@${npm_module.version}`;
   const filename = path.join(outputDir, getCacheFilename(getRpmPackageName(npm_module.name), npm_module.version));
-  execSync([command, pkg, filename, useNodejs6, specfile, useLegacyPeerDeps].join(' '), {stdio: [0,1,2]});
+  execSync([command, pkg, filename, specfile, useLegacyPeerDeps].join(' '), {stdio: [0,1,2]});
 }
 
 function createTempDir() {

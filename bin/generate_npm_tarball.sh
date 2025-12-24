@@ -3,45 +3,39 @@
 set -x
 
 if [ $# -lt 2 ]; then
-  echo "usage: $0 PACKAGE[@VERSION] OUTPUT.TGZ [USE NODEJS 6] [SPECFILE_FOR_PURGE]"
+  echo "usage: $0 PACKAGE[@VERSION] OUTPUT.TGZ [SPECFILE_FOR_PURGE]"
   exit 1
 fi
 package=$1
 output=$(pwd)/$2
-usenodejs6=${3:-false}
-specfile="$4"
-legacypeerdeps=${5:-false}
+specfile="$3"
+legacypeerdeps=${4:-false}
 wd=$(mktemp -d)
 trap "rm -rf '$wd'" EXIT INT TERM
 
 create_cache() {
-  if [[ $usenodejs6 == true ]];then
-    node_modules/npm/bin/npm-cli.js install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
-    (cd $wd/cache && find -type f | sort) > $wd/to-compress
-  else
-    if [[ -n $specfile ]] ; then
-      mkdir $wd/spec
-      spectool --get-files --directory $wd/spec "$specfile"
+  if [[ -n $specfile ]] ; then
+    mkdir $wd/spec
+    spectool --get-files --directory $wd/spec "$specfile"
 
-      for filename in $wd/spec/*.tgz ; do
-        if [[ "$filename" != "*-registry.npmjs.org.tgz" ]] ; then
-          npm cache add --cache $wd/cache $filename
-        fi
-      done
-    fi
-
-    (cd $wd/cache && find -type f | sort) > $wd/cache-primed
-
-    if [[ $legacypeerdeps == true ]];then
-      npm install --legacy-peer-deps --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
-    else
-      npm install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
-    fi
-
-    (cd $wd/cache && find -type f | sort) > $wd/cache-full
-
-    grep --invert-match --file $wd/cache-primed $wd/cache-full > $wd/to-compress
+    for filename in $wd/spec/*.tgz ; do
+      if [[ "$filename" != "*-registry.npmjs.org.tgz" ]] ; then
+        npm cache add --cache $wd/cache $filename
+      fi
+    done
   fi
+
+  (cd $wd/cache && find -type f | sort) > $wd/cache-primed
+
+  if [[ $legacypeerdeps == true ]];then
+    npm install --legacy-peer-deps --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+  else
+    npm install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+  fi
+
+  (cd $wd/cache && find -type f | sort) > $wd/cache-full
+
+  grep --invert-match --file $wd/cache-primed $wd/cache-full > $wd/to-compress
 }
 
 if [[ -n $specfile ]] ; then
@@ -50,9 +44,6 @@ fi
 
 mkdir $wd/cache $wd/install
 cd $wd/install
-if [[ $usenodejs6 == true ]];then
-  npm install npm@3.x
-fi
 
 create_cache
 
