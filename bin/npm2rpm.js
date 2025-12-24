@@ -25,7 +25,6 @@ npm2rpm
 .option('-t, --template [template]', "RPM .spec template to use")
 .option('-6, --use-nodejs6 [useNodejs6]', "If wanting to generate cache tarball for NodeJS 6")
 .option('-o, --output [directory]', "Directory to output files to")
-.option('-c, --scl [scl]', "Adds scl prefixes to spec file")
 .option('-p, --use-legacy-peer-deps [useLegacyPeerDeps]', "Adds --legacy-peer-deps during npm install")
 .parse(process.argv);
 
@@ -50,10 +49,6 @@ if (npm2rpm.output === undefined) {
 
 if (npm2rpm.useNodejs6 === undefined) {
   npm2rpm.useNodejs6 = false;
-}
-
-if (npm2rpm.scl === undefined) {
-  npm2rpm.scl = false;
 }
 
 if (npm2rpm.useLegacyPeerDeps === undefined) {
@@ -95,7 +90,7 @@ tar_stream.on('finish', () => {
       // Dependencies come as name@version but sometimes as @name@version
       const dependencies = deps.map(dependency => rsplit(dependency, '@'));
 
-      specfile = writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.scl, npm2rpm.useLegacyPeerDeps);
+      specfile = writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
 
       if (dependencies.length > 0) {
         console.log(' - Generating npm cache tgz... '.bold)
@@ -103,12 +98,12 @@ tar_stream.on('finish', () => {
       }
     });
   } else {
-    writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.scl, npm2rpm.useLegacyPeerDeps);
+    writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
   }
 })
 
-function writeSpecFile(npmModule, files, dependencies, release, template, specDir, scl, use_legacy_peer_deps) {
-  const content = specFileGenerator(npmModule, files, dependencies, release, template, scl, use_legacy_peer_deps);
+function writeSpecFile(npmModule, files, dependencies, release, template, specDir, use_legacy_peer_deps) {
+  const content = specFileGenerator(npmModule, files, dependencies, release, template, use_legacy_peer_deps);
   const filename = path.join(specDir, `${getRpmPackageName(npmModule.name)}.spec`);
   fs.writeFileSync(filename, content);
   return filename;

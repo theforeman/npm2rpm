@@ -1,9 +1,6 @@
-%{?scl:%scl_package nodejs-%{npm_name}}
-%{!?scl:%global pkg_name %{name}}
-
 %global npm_name {{{NAME}}}
 
-Name: %{?scl_prefix}{{{RPM_PACKAGE_NAME}}}
+Name: {{{RPM_PACKAGE_NAME}}}
 Version: {{{VERSION}}}
 Release: {{{RELEASE}}}%{?dist}
 Summary: {{{SUMMARY}}}
@@ -13,43 +10,33 @@ URL: {{{PROJECTURL}}}
 {{#each SOURCES}}
 {{{.}}}
 {{/each}}
-BuildRequires: %{?scl_prefix_nodejs}npm
-%if 0%{!?scl:1}
+BuildRequires: npm
 BuildRequires: nodejs-packaging
-%endif
 BuildArch: noarch
 ExclusiveArch: %{nodejs_arches} noarch
 
-Provides: %{?scl_prefix}npm(%{npm_name}) = %{version}
+Provides: npm(%{npm_name}) = %{version}
 {{#each PROVIDES}}
 Provides: bundled(npm({{{name}}})) = {{{version}}}
 {{/each}}
 AutoReq: no
 AutoProv: no
 
-%if 0%{?scl:1}
-%define npm_cache_dir npm_cache
-%else
 %define npm_cache_dir /tmp/npm_cache_%{name}-%{version}-%{release}
-%endif
 
 %description
 %{summary}
 
 %prep
 mkdir -p %{npm_cache_dir}
-%{?scl:scl enable %{?scl_nodejs} - << \end_of_scl}
 for tgz in %{sources}; do
   echo $tgz | grep -q registry.npmjs.org || npm cache add --cache %{npm_cache_dir} $tgz
 done
-%{?scl:end_of_scl}
 
 %setup -T -q -a {{{PROVIDES.length}}} -D -n %{npm_cache_dir}
 
 %build
-%{?scl:scl enable %{?scl_nodejs} - << \end_of_scl}
-npm install {{{LEGACY_PEER_DEPS}}}--cache-min Infinity --cache %{?scl:../}%{npm_cache_dir} --no-shrinkwrap --no-optional --global-style true %{npm_name}@%{version}
-%{?scl:end_of_scl}
+npm install {{{LEGACY_PEER_DEPS}}}--cache-min Infinity --cache %{npm_cache_dir} --no-shrinkwrap --no-optional --global-style true %{npm_name}@%{version}
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
