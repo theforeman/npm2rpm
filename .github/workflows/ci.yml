@@ -8,9 +8,8 @@ jobs:
       fail-fast: false
       matrix:
         node_version:
-          - 18
-          - 16
-          - 14
+          - '24'
+          - '22'
 
     steps:
       - uses: actions/checkout@v6
