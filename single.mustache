@@ -10,6 +10,10 @@ URL: {{{PROJECTURL}}}
 {{{.}}}
 {{/each}}
 BuildRequires: nodejs-packaging
+%if 0%{?rhel} == 10
+# https://issues.redhat.com/browse/RHEL-137712 is fixed in RHEL 10.3
+BuildRequires: /usr/bin/node
+%endif
 {{#each DEPENDENCIES}}
 Requires: {{{.}}}
 {{/each}}
