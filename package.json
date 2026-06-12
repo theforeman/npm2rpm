@@ -21,6 +21,9 @@
   ],
   "author": "Daniel Lobato Garcia <me@daniellobato.me>",
   "license": "GPL-3.0",
+  "engines": {
+    "node": ">=22"
+  },
   "bugs": {
     "url": "https://github.com/theforeman/npm2rpm/issues"
   },
