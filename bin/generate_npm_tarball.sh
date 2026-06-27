@@ -38,9 +38,9 @@ create_cache() {
   (cd $wd/cache && find -type f | sort) > $wd/cache-primed
 
   if [[ $legacypeerdeps == true ]];then
-    npm install --legacy-peer-deps --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+    npm install --legacy-peer-deps --cache $wd/cache $package --no-shrinkwrap --no-optional --production --ignore-scripts --verbose
   else
-    npm install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --verbose
+    npm install --cache $wd/cache $package --no-shrinkwrap --no-optional --production --ignore-scripts --verbose
   fi
 
   (cd $wd/cache && find -type f | sort) > $wd/cache-full
