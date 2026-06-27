@@ -16,12 +16,18 @@ BuildRequires: nodejs-packaging
 # https://issues.redhat.com/browse/RHEL-137712 is fixed in RHEL 10.3
 BuildRequires: /usr/bin/node
 %endif
+{{#each UNBUNDLED_BUILD_REQUIRES}}
+BuildRequires: npm({{{.}}})
+{{/each}}
 BuildArch: noarch
 ExclusiveArch: %{nodejs_arches} noarch
 
 Provides: npm(%{npm_name}) = %{version}
 {{#each PROVIDES}}
 Provides: bundled(npm({{{name}}})) = {{{version}}}
+{{/each}}
+{{#each UNBUNDLED_REQUIRES}}
+Requires: npm({{{.}}})
 {{/each}}
 AutoReq: no
 AutoProv: no
@@ -43,6 +49,20 @@ done
 PREP_TEMP=$(mktemp -d)
 tar xzf %{SOURCE0} -C $PREP_TEMP
 # Apply patches and remove binaries here if needed
+{{#if MAIN_PACKAGE_HAS_BINARIES}}
+# Remove pre-compiled binaries detected in source
+# Fedora policy requires building from source or excluding binaries
+# The following files were detected as native binaries or WebAssembly:
+{{#each PREP_BINARY_STRIP.files}}
+#   {{{.}}}
+{{/each}}
+# If these binaries are needed at runtime, ensure package.json has build scripts
+# and add appropriate BuildRequires (e.g., node-gyp, gcc-c++, *-devel)
+
+rm -vf{{#each PREP_BINARY_STRIP.files}} \
+  {{{.}}}{{/each}}
+
+{{/if}}
 tar czf %{_builddir}/%{npm_name}-%{version}.tgz -C $PREP_TEMP package
 rm -rf $PREP_TEMP
 
