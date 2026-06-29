@@ -2,7 +2,6 @@
 // NodeJS core
 const fs = require('fs');
 const tmp = require('tmp');
-const execSync = require('child_process').execSync;
 const path = require('path');
 // NPM deps
 const request = require('request');
@@ -12,7 +11,7 @@ const colors = require('colors');
 const npm2rpm = require('commander');
 const normalizeData = require('normalize-package-data');
 // Our own deps
-const {npmUrl, rsplit, getCacheFilename, getRpmPackageName} = require('../lib/npm_helpers.js');
+const {npmUrl, rsplit, getRpmPackageName} = require('../lib/npm_helpers.js');
 const specFileGenerator = require('../lib/spec_file_generator.js');
 
 console.log('---- npm2rpm ----'.green.bold);
@@ -86,11 +85,6 @@ tar_stream.on('finish', () => {
       const dependencies = deps.map(dependency => rsplit(dependency, '@'));
 
       specfile = writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
-
-      if (dependencies.length > 0) {
-        console.log(' - Generating npm cache tgz... '.bold)
-        createNpmCacheTar(npm_module, npm2rpm.output, specfile, npm2rpm.useLegacyPeerDeps);
-      }
     });
   } else {
     writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
@@ -104,12 +98,6 @@ function writeSpecFile(npmModule, files, dependencies, release, template, specDi
   return filename;
 }
 
-function createNpmCacheTar(npm_module, outputDir, specfile, useLegacyPeerDeps) {
-  const command = path.join(__dirname, 'generate_npm_tarball.sh');
-  const pkg = `${npm_module.name}@${npm_module.version}`;
-  const filename = path.join(outputDir, getCacheFilename(getRpmPackageName(npm_module.name), npm_module.version));
-  execSync([command, pkg, filename, specfile, useLegacyPeerDeps].join(' '), {stdio: [0,1,2]});
-}
 
 function createTempDir() {
   const tmpDir = tmp.dirSync({

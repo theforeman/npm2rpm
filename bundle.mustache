@@ -34,10 +34,92 @@ AutoProv: no
 %prep
 mkdir -p %{npm_cache_dir}
 for tgz in %{sources}; do
-  echo $tgz | grep -q registry.npmjs.org || npm cache add --cache %{npm_cache_dir} $tgz
+  npm cache add --cache %{npm_cache_dir} $tgz
 done
 
-%setup -T -q -a {{{PROVIDES.length}}} -D -n %{npm_cache_dir}
+# Synthesize registry packuments from source tarballs so npm can resolve
+# the dependency tree offline without a pre-built cache tarball.
+node - %{npm_cache_dir} %{sources} << 'EOF_SYNTHESIZE'
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+const cacheDir = path.resolve(process.argv[2]);
+const tarballs = process.argv.slice(3);
+const cacacheDir = path.join(cacheDir, '_cacache');
+
+const packuments = {};
+
+for (const tgz of tarballs) {
+  let pkgJson;
+  try {
+    const listing = execSync(`tar tf "${tgz}"`, {encoding: 'utf-8'});
+    const pkgPath = listing.split('\n').find(l => /^[^/]+\/package\.json$/.test(l));
+    if (!pkgPath) continue;
+    const raw = execSync(`tar xf "${tgz}" --to-stdout "${pkgPath}"`, {encoding: 'utf-8'});
+    pkgJson = JSON.parse(raw);
+  } catch {
+    continue;
+  }
+
+  const tgzData = fs.readFileSync(tgz);
+  const integrity = 'sha512-' + crypto.createHash('sha512').update(tgzData).digest('base64');
+  const shasum = crypto.createHash('sha1').update(tgzData).digest('hex');
+
+  const encodedName = pkgJson.name.replace('/', '%2f');
+  const versionEntry = Object.assign({}, pkgJson, {
+    dist: {
+      tarball: 'https://registry.npmjs.org/' + encodedName + '/-/' + pkgJson.name.split('/').pop() + '-' + pkgJson.version + '.tgz',
+      integrity: integrity,
+      shasum: shasum
+    },
+    _hasShrinkwrap: false
+  });
+
+  if (!packuments[pkgJson.name]) {
+    packuments[pkgJson.name] = {
+      _id: pkgJson.name,
+      name: pkgJson.name,
+      'dist-tags': {latest: pkgJson.version},
+      versions: {}
+    };
+  }
+  packuments[pkgJson.name].versions[pkgJson.version] = versionEntry;
+}
+
+for (const [name, packument] of Object.entries(packuments)) {
+  const packBuf = Buffer.from(JSON.stringify(packument));
+  const contentHash = crypto.createHash('sha512').update(packBuf).digest('hex');
+  const contentIntegrity = 'sha512-' + crypto.createHash('sha512').update(packBuf).digest('base64');
+
+  const contentDir = path.join(cacacheDir, 'content-v2', 'sha512', contentHash.slice(0, 2), contentHash.slice(2, 4));
+  fs.mkdirSync(contentDir, {recursive: true});
+  fs.writeFileSync(path.join(contentDir, contentHash.slice(4)), packBuf);
+
+  const encodedName = name.replace('/', '%2f');
+  const cacheKey = 'make-fetch-happen:request-cache:https://registry.npmjs.org/' + encodedName;
+  const keyHash = crypto.createHash('sha256').update(cacheKey).digest('hex');
+  const indexDir = path.join(cacacheDir, 'index-v5', keyHash.slice(0, 2), keyHash.slice(2, 4));
+  fs.mkdirSync(indexDir, {recursive: true});
+
+  const indexEntry = JSON.stringify({
+    key: cacheKey,
+    integrity: contentIntegrity,
+    time: 0,
+    size: packBuf.length,
+    metadata: {
+      time: 0,
+      url: 'https://registry.npmjs.org/' + encodedName,
+      reqHeaders: {accept: 'application/json'},
+      resHeaders: {'cache-control': 'public, max-age=300', 'content-type': 'application/json'},
+      options: {}
+    }
+  });
+  const entryHash = crypto.createHash('sha1').update(indexEntry).digest('hex');
+  fs.writeFileSync(path.join(indexDir, keyHash.slice(4)), entryHash + '\t' + indexEntry + '\n');
+}
+EOF_SYNTHESIZE
 
 %build
 npm install {{{LEGACY_PEER_DEPS}}}--offline --cache %{_builddir}/%{npm_cache_dir} --package-lock false --omit optional --install-strategy shallow %{npm_name}@%{version}
@@ -56,9 +138,6 @@ mkdir -p %{buildroot}%{_bindir}/
 chmod 0755 %{buildroot}%{nodejs_sitelib}/%{npm_name}/{{{this}}}
 ln -sf %{nodejs_sitelib}/%{npm_name}/{{{this}}} %{buildroot}%{_bindir}/{{{@key}}}
 {{/each}}
-
-%clean
-rm -rf %{buildroot} %{npm_cache_dir}
 
 %files
 %{nodejs_sitelib}/%{npm_name}
