@@ -7,13 +7,13 @@ const path = require('path');
 // NPM deps
 const request = require('request');
 const tar = require('tar');
-const npm_remote_ls = require('npm-remote-ls');
 const colors = require('colors');
 const npm2rpm = require('commander');
 const normalizeData = require('normalize-package-data');
 // Our own deps
 const {npmUrl, rsplit, getCacheFilename, getRpmPackageName} = require('../lib/npm_helpers.js');
 const specFileGenerator = require('../lib/spec_file_generator.js');
+const remoteLs = require('../lib/remote_ls.js');
 
 console.log('---- npm2rpm ----'.green.bold);
 console.log('-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-'.rainbow.bgWhite);
@@ -75,13 +75,11 @@ tar_stream.on('finish', () => {
   }
 
   if (npm2rpm.strategy === 'bundle') {
-    npm_remote_ls.config({
+    console.log(' - Fetching flattened list of production dependencies for '.bold + npm_module.name);
+    remoteLs.fetchDependencies(npm_module.name, npm_module.version, {
       development: false,
       optional: false
-    });
-
-    console.log(' - Fetching flattened list of production dependencies for '.bold + npm_module.name);
-    npm_remote_ls.ls(npm_module.name, npm_module.version, true, (deps) => {
+    }, (deps) => {
       // Dependencies come as name@version but sometimes as @name@version
       const dependencies = deps.map(dependency => rsplit(dependency, '@'));
 
