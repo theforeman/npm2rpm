@@ -39,8 +39,16 @@ done
 
 %setup -T -q -a {{{PROVIDES.length}}} -D -n %{npm_cache_dir}
 
+# Extract Source0 to allow patching
+PREP_TEMP=$(mktemp -d)
+tar xzf %{SOURCE0} -C $PREP_TEMP
+# Apply patches and remove binaries here if needed
+tar czf %{_builddir}/%{npm_name}-%{version}.tgz -C $PREP_TEMP package
+rm -rf $PREP_TEMP
+
 %build
-npm install {{{LEGACY_PEER_DEPS}}}--offline --cache %{_builddir}/%{npm_cache_dir} --package-lock false --omit optional --install-strategy shallow %{npm_name}@%{version}
+# Install from the (possibly patched) tarball instead of by name@version
+npm install {{{LEGACY_PEER_DEPS}}}--offline --cache %{_builddir}/%{npm_cache_dir} --package-lock false --omit optional --install-strategy shallow %{_builddir}/%{npm_name}-%{version}.tgz
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
