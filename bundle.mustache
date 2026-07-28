@@ -54,13 +54,18 @@ const packuments = {};
 for (const tgz of tarballs) {
   let pkgJson;
   try {
-    const listing = execSync(`tar tf "${tgz}"`, {encoding: 'utf-8'});
+    // maxBuffer must be raised: the default 1MiB is exceeded by large packages
+    // (@patternfly/react-tokens lists 22k entries, ~1.3MB), and the resulting
+    // ENOBUFS would otherwise drop the package from the packuments silently.
+    const listing = execSync(`tar tf "${tgz}"`, {encoding: 'utf-8', maxBuffer: Infinity});
     const pkgPath = listing.split('\n').find(l => /^[^/]+\/package\.json$/.test(l));
-    if (!pkgPath) continue;
-    const raw = execSync(`tar xf "${tgz}" --to-stdout "${pkgPath}"`, {encoding: 'utf-8'});
+    if (!pkgPath) throw new Error('no top-level package.json in tarball');
+    const raw = execSync(`tar xf "${tgz}" --to-stdout "${pkgPath}"`, {encoding: 'utf-8', maxBuffer: Infinity});
     pkgJson = JSON.parse(raw);
-  } catch {
-    continue;
+  } catch (e) {
+    // Every Source must yield a packument entry; skipping one surfaces later as
+    // an unrelated ENOTCACHED for whichever package depended on it.
+    throw new Error(`failed to read package.json from ${tgz}: ${e.message}`);
   }
 
   const tgzData = fs.readFileSync(tgz);
