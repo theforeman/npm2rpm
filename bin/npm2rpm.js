@@ -113,7 +113,6 @@ function createNpmCacheTar(npm_module, outputDir, specfile, useLegacyPeerDeps) {
 
 function createTempDir() {
   const tmpDir = tmp.dirSync({
-    mode: 6644,
     prefix: 'npm2rpm-',
     keep: true
   });
