@@ -2,17 +2,16 @@
 // NodeJS core
 const fs = require('fs');
 const tmp = require('tmp');
-const execSync = require('child_process').execSync;
 const path = require('path');
 // NPM deps
 const request = require('request');
 const tar = require('tar');
-const npm_remote_ls = require('npm-remote-ls');
 const colors = require('colors');
 const npm2rpm = require('commander');
 const normalizeData = require('normalize-package-data');
 // Our own deps
-const {npmUrl, rsplit, getCacheFilename, getRpmPackageName} = require('../lib/npm_helpers.js');
+const {npmUrl, getLockfileName, getRpmPackageName} = require('../lib/npm_helpers.js');
+const {generateLockfile, lockfileDependencies} = require('../lib/lockfile.js');
 const specFileGenerator = require('../lib/spec_file_generator.js');
 
 console.log('---- npm2rpm ----'.green.bold);
@@ -75,23 +74,13 @@ tar_stream.on('finish', () => {
   }
 
   if (npm2rpm.strategy === 'bundle') {
-    npm_remote_ls.config({
-      development: false,
-      optional: false
-    });
+    console.log(' - Resolving production dependencies for '.bold + npm_module.name);
+    const lockfile = generateLockfile(npm_module.name, npm_module.version, npm2rpm.useLegacyPeerDeps);
+    const dependencies = lockfileDependencies(lockfile);
+    console.log(' - Resolved '.bold + dependencies.length + ' packages');
 
-    console.log(' - Fetching flattened list of production dependencies for '.bold + npm_module.name);
-    npm_remote_ls.ls(npm_module.name, npm_module.version, true, (deps) => {
-      // Dependencies come as name@version but sometimes as @name@version
-      const dependencies = deps.map(dependency => rsplit(dependency, '@'));
-
-      specfile = writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
-
-      if (dependencies.length > 0) {
-        console.log(' - Generating npm cache tgz... '.bold)
-        createNpmCacheTar(npm_module, npm2rpm.output, specfile, npm2rpm.useLegacyPeerDeps);
-      }
-    });
+    writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
+    writeLockfile(npm_module, lockfile, npm2rpm.output);
   } else {
     writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
   }
@@ -104,11 +93,10 @@ function writeSpecFile(npmModule, files, dependencies, release, template, specDi
   return filename;
 }
 
-function createNpmCacheTar(npm_module, outputDir, specfile, useLegacyPeerDeps) {
-  const command = path.join(__dirname, 'generate_npm_tarball.sh');
-  const pkg = `${npm_module.name}@${npm_module.version}`;
-  const filename = path.join(outputDir, getCacheFilename(getRpmPackageName(npm_module.name), npm_module.version));
-  execSync([command, pkg, filename, specfile, useLegacyPeerDeps].join(' '), {stdio: [0,1,2]});
+function writeLockfile(npm_module, lockfile, outputDir) {
+  const filename = path.join(outputDir, getLockfileName(getRpmPackageName(npm_module.name), npm_module.version));
+  fs.writeFileSync(filename, JSON.stringify(lockfile, null, 2) + '\n');
+  console.log(' - Wrote '.bold + filename);
 }
 
 function createTempDir() {
