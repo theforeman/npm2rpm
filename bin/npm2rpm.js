@@ -4,14 +4,13 @@ const fs = require('fs');
 const tmp = require('tmp');
 const path = require('path');
 // NPM deps
-const request = require('request');
-const tar = require('tar');
 const colors = require('colors');
 const npm2rpm = require('commander');
 const normalizeData = require('normalize-package-data');
 // Our own deps
 const {npmUrl, getLockfileName, getRpmPackageName} = require('../lib/npm_helpers.js');
 const {generateLockfile, lockfileDependencies} = require('../lib/lockfile.js');
+const downloadAndExtract = require('../lib/npm_downloader.js');
 const specFileGenerator = require('../lib/spec_file_generator.js');
 
 console.log('---- npm2rpm ----'.green.bold);
@@ -53,21 +52,33 @@ const url = npmUrl(npm2rpm.name, npm2rpm.version);
 console.log(' - Starting npm module download: '.bold + url );
 const tmpDir = createTempDir();
 console.log(' - Unpacking in '.bold + tmpDir + ' ...'.bold);
-const tar_stream = request.get(url).pipe(tar.extract({cwd: tmpDir}))
-tar_stream.on('error', (error) => {
-  console.log('ERROR'.red, '-', error.message);
-  if (error.code === 'Z_DATA_ERROR') {
-    console.log('Are you sure that the module name and version can be found on npmjs.org?'.bold);
+downloadAndExtract(url, tmpDir, error => {
+  if (error) {
+    console.log('ERROR'.red, '-', error.message);
+    console.log(`Unable to download ${npm2rpm.name}@${npm2rpm.version} from registry.npmjs.org.`.bold);
+    process.exitCode = 1;
+    return;
   }
-})
-tar_stream.on('finish', () => {
+
+  const packageJson = path.join(tmpDir, 'package', 'package.json');
+  if (!fs.existsSync(packageJson)) {
+    console.log('ERROR'.red, '-', 'the downloaded archive does not contain package/package.json');
+    console.log(`Unable to download ${npm2rpm.name}@${npm2rpm.version} from registry.npmjs.org.`.bold);
+    process.exitCode = 1;
+    return;
+  }
+
+  unpacked(packageJson);
+});
+
+function unpacked(packageJson) {
   console.log(' - Finished extracting for '.bold + npm2rpm.name);
   console.log(' - Reading package.json for '.bold + npm2rpm.name);
-  const npm_module = readPackageJson(path.join(tmpDir, 'package', 'package.json'),
+  const npm_module = readPackageJson(packageJson,
     msg => console.warn('Warning:', msg));
   console.log(' - Finished reading package.json for '.bold + npm2rpm.name);
 
-  const files = fs.readdirSync(path.join(tmpDir, 'package'));
+  const files = fs.readdirSync(path.dirname(packageJson));
 
   if (!fs.existsSync(npm2rpm.output)) {
     fs.mkdirSync(npm2rpm.output);
@@ -84,7 +95,7 @@ tar_stream.on('finish', () => {
   } else {
     writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
   }
-})
+}
 
 function writeSpecFile(npmModule, files, dependencies, release, template, specDir, use_legacy_peer_deps) {
   const content = specFileGenerator(npmModule, files, dependencies, release, template, use_legacy_peer_deps);
