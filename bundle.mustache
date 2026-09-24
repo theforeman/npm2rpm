@@ -62,7 +62,7 @@ fs.writeFileSync("package.json", JSON.stringify({
 '
 
 %build
-npm ci {{{LEGACY_PEER_DEPS}}}--offline --cache %{_builddir}/%{npm_cache_dir} --omit optional
+npm ci {{{LEGACY_PEER_DEPS}}}--ignore-scripts --offline --cache %{_builddir}/%{npm_cache_dir} --omit optional
 
 %install
 mkdir -p %{buildroot}%{nodejs_sitelib}/%{npm_name}
