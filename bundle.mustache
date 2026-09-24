@@ -24,6 +24,9 @@ Provides: npm(%{npm_name}) = %{version}
 {{#each PROVIDES}}
 Provides: bundled(npm({{{name}}})) = {{{version}}}
 {{/each}}
+{{#each DEPENDENCIES}}
+Requires: {{{.}}}
+{{/each}}
 AutoReq: no
 AutoProv: no
 

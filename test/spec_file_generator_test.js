@@ -1,4 +1,5 @@
 var assert = require('assert');
+var path = require('path');
 var specFileGenerator = require('../lib/spec_file_generator.js');
 
 describe('dependenciesToRequires', () => {
@@ -111,5 +112,78 @@ describe('dependenciesToRequires', () => {
   it('ignores invalid versions', () => {
     var invalid = {'foo': 'a.b.c'};
     assert.deepEqual(d2r(invalid), ['npm(foo)']);
+  });
+});
+
+describe('peerDependenciesToRequires', () => {
+  var p2r = specFileGenerator.peerDependenciesToRequires;
+
+  it('handles required peer dependencies', () => {
+    var deps = {'react': '^16.14.0'};
+    assert.deepEqual(p2r(deps), [
+      'npm(react) >= 16.14.0',
+      'npm(react) < 17.0.0'
+    ]);
+  });
+
+  it('uses conditional requirements for optional peer dependencies', () => {
+    var deps = {'react': '^16.14.0'};
+    var meta = {'react': {'optional': true}};
+    assert.deepEqual(p2r(deps, meta), [
+      '(npm(react) >= 16.14.0 if npm(react))',
+      '(npm(react) < 17.0.0 if npm(react))'
+    ]);
+  });
+
+  it('omits optional peers without an expressible version constraint', () => {
+    var deps = {'anything': '*', 'invalid': 'not-semver'};
+    var meta = {
+      'anything': {'optional': true},
+      'invalid': {'optional': true}
+    };
+    assert.deepEqual(p2r(deps, meta), []);
+  });
+});
+
+describe('peer dependencies in generated specs', () => {
+  var npmModule = {
+    name: 'peer-consumer',
+    version: '1.0.0',
+    description: 'Peer dependency test',
+    license: 'MIT',
+    bin: {},
+    dependencies: {'ordinary': '^2.0.0'},
+    peerDependencies: {'react': '^16.14.0', 'webpack': '^5.0.0'},
+    peerDependenciesMeta: {'webpack': {'optional': true}}
+  };
+
+  it('includes peer dependencies in single-package specs', () => {
+    var spec = specFileGenerator(
+      npmModule,
+      [],
+      [],
+      '1',
+      path.join(__dirname, '..', 'single.mustache'),
+      false
+    );
+
+    assert.match(spec, /Requires: npm\(ordinary\) >= 2\.0\.0/);
+    assert.match(spec, /Requires: npm\(react\) >= 16\.14\.0/);
+    assert.match(spec, /Requires: \(npm\(webpack\) >= 5\.0\.0 if npm\(webpack\)\)/);
+  });
+
+  it('includes peer dependencies in bundle specs', () => {
+    var spec = specFileGenerator(
+      npmModule,
+      [],
+      [['bundled-dependency', '1.0.0']],
+      '1',
+      path.join(__dirname, '..', 'bundle.mustache'),
+      true
+    );
+
+    assert.match(spec, /Requires: npm\(react\) >= 16\.14\.0/);
+    assert.match(spec, /Requires: \(npm\(webpack\) >= 5\.0\.0 if npm\(webpack\)\)/);
+    assert.doesNotMatch(spec, /Requires: npm\(ordinary\)/);
   });
 });
