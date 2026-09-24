@@ -1,5 +1,24 @@
 var assert = require('assert');
+var path = require('path');
 var specFileGenerator = require('../lib/spec_file_generator.js');
+
+describe('bundle template', () => {
+  it('disables dependency lifecycle scripts', () => {
+    var npmModule = {
+      name: 'example',
+      version: '1.0.0',
+      description: 'Example package.',
+      license: 'MIT',
+      bin: {}
+    };
+    var dependencies = [['dependency', '2.0.0', 'https://registry.npmjs.org/dependency/-/dependency-2.0.0.tgz']];
+    var template = path.join(__dirname, '..', 'bundle.mustache');
+
+    var spec = specFileGenerator(npmModule, ['index.js'], dependencies, 1, template, false);
+
+    assert.match(spec, /npm ci --ignore-scripts --offline/);
+  });
+});
 
 describe('dependenciesToRequires', () => {
   var d2r = specFileGenerator.dependenciesToRequires;
