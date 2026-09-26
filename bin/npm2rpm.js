@@ -67,7 +67,9 @@ tar_stream.on('finish', () => {
     msg => console.warn('Warning:', msg));
   console.log(' - Finished reading package.json for '.bold + npm2rpm.name);
 
-  const files = fs.readdirSync(path.join(tmpDir, 'package'));
+  const packageEntries = fs.readdirSync(path.join(tmpDir, 'package'), {withFileTypes: true});
+  const files = packageEntries.map(entry => entry.name);
+  const regularFiles = packageEntries.filter(entry => entry.isFile()).map(entry => entry.name);
 
   if (!fs.existsSync(npm2rpm.output)) {
     fs.mkdirSync(npm2rpm.output);
@@ -79,15 +81,18 @@ tar_stream.on('finish', () => {
     const dependencies = lockfileDependencies(lockfile);
     console.log(' - Resolved '.bold + dependencies.length + ' packages');
 
-    writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
+    writeSpecFile(npm_module, files, dependencies, npm2rpm.release, npm2rpm.template, npm2rpm.output,
+      npm2rpm.useLegacyPeerDeps, regularFiles);
     writeLockfile(npm_module, lockfile, npm2rpm.output);
   } else {
-    writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output, npm2rpm.useLegacyPeerDeps);
+    writeSpecFile(npm_module, files, [], npm2rpm.release, npm2rpm.template, npm2rpm.output,
+      npm2rpm.useLegacyPeerDeps, regularFiles);
   }
 })
 
-function writeSpecFile(npmModule, files, dependencies, release, template, specDir, use_legacy_peer_deps) {
-  const content = specFileGenerator(npmModule, files, dependencies, release, template, use_legacy_peer_deps);
+function writeSpecFile(npmModule, files, dependencies, release, template, specDir, use_legacy_peer_deps, regularFiles) {
+  const content = specFileGenerator(npmModule, files, dependencies, release, template,
+    use_legacy_peer_deps, regularFiles);
   const filename = path.join(specDir, `${getRpmPackageName(npmModule.name)}.spec`);
   fs.writeFileSync(filename, content);
   return filename;
