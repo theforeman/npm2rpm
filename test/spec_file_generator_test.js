@@ -1,4 +1,5 @@
 var assert = require('assert');
+var path = require('path');
 var specFileGenerator = require('../lib/spec_file_generator.js');
 
 describe('dependenciesToRequires', () => {
@@ -111,5 +112,30 @@ describe('dependenciesToRequires', () => {
   it('ignores invalid versions', () => {
     var invalid = {'foo': 'a.b.c'};
     assert.deepEqual(d2r(invalid), ['npm(foo)']);
+  });
+});
+
+describe('package contents', () => {
+  it('keeps runtime directories whose names look like documentation', () => {
+    const npmModule = {
+      name: 'licenseify',
+      version: '1.1.3',
+      description: 'A tool for scaffolding out LICENSE files',
+      license: 'MIT',
+      dependencies: {},
+      bin: {}
+    };
+    const files = ['LICENSE', 'README.md', 'licenses', 'docs', 'index.js', 'package.json'];
+    const regularFiles = ['LICENSE', 'README.md', 'index.js', 'package.json'];
+    const template = path.join(__dirname, '..', 'single.mustache');
+
+    const spec = specFileGenerator(npmModule, files, [], 1, template, false, regularFiles);
+
+    assert(spec.includes('cp -pfr licenses %{buildroot}%{nodejs_sitelib}/%{npm_name}'));
+    assert(spec.includes('cp -pfr docs %{buildroot}%{nodejs_sitelib}/%{npm_name}'));
+    assert(spec.includes('%license LICENSE'));
+    assert(spec.includes('%doc README.md'));
+    assert(!spec.includes('%license licenses'));
+    assert(!spec.includes('%doc docs'));
   });
 });
