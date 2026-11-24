@@ -1,4 +1,5 @@
 var assert = require('assert');
+var path = require('path');
 var specFileGenerator = require('../lib/spec_file_generator.js');
 
 describe('dependenciesToRequires', () => {
@@ -72,7 +73,7 @@ describe('dependenciesToRequires', () => {
     assert.deepEqual(d2r(tildeUnstableFullVersion), ['npm(foo) >= 0.2.3', 'npm(foo) < 0.3.0']);
     assert.deepEqual(d2r(tildeUnstablePartial1),    ['npm(foo) >= 0.2.0', 'npm(foo) < 0.3.0']);
     assert.deepEqual(d2r(tildeUnstablePartial2),    ['npm(foo) >= 0.0.0', 'npm(foo) < 1.0.0']);
-    assert.deepEqual(d2r(tildePreRelease),          ['npm(foo) >= 1.2.3-beta.2', 'npm(foo) < 1.3.0']);
+    assert.deepEqual(d2r(tildePreRelease),          ['npm(foo) >= 1.2.3~beta.2', 'npm(foo) < 1.3.0']);
   });
 
   it('handles caret ranges', () => {
@@ -96,8 +97,15 @@ describe('dependenciesToRequires', () => {
     assert.deepEqual(d2r(caretUnstable2FullVersion), ['npm(foo) >= 0.0.3', 'npm(foo) < 0.0.4']);
     assert.deepEqual(d2r(caretUnstable2Partial1),    ['npm(foo) >= 0.0.0', 'npm(foo) < 0.1.0']);
     assert.deepEqual(d2r(caretUnstable2Partial2),    ['npm(foo) >= 0.0.0', 'npm(foo) < 0.1.0']);
-    assert.deepEqual(d2r(caretPreRelease),           ['npm(foo) >= 1.2.3-beta.2', 'npm(foo) < 2.0.0']);
-    assert.deepEqual(d2r(caretUnstablePreRelease),   ['npm(foo) >= 0.0.3-beta.2', 'npm(foo) < 0.0.4']);
+    assert.deepEqual(d2r(caretPreRelease),           ['npm(foo) >= 1.2.3~beta.2', 'npm(foo) < 2.0.0']);
+    assert.deepEqual(d2r(caretUnstablePreRelease),   ['npm(foo) >= 0.0.3~beta.2', 'npm(foo) < 0.0.4']);
+  });
+
+  it('maps prerelease versions to valid RPM versions', () => {
+    assert.deepEqual(d2r({'foo': '1.0.0-beta.1'}), ['npm(foo) = 1.0.0~beta.1']);
+    assert.deepEqual(d2r({'foo': '>= 7.21.0-placeholder-for-preset-env.2'}),
+                     ['npm(foo) >= 7.21.0~placeholder_for_preset_env.2']);
+    assert.deepEqual(d2r({'foo': '^1.0.0-rc.1'}), ['npm(foo) >= 1.0.0~rc.1', 'npm(foo) < 2.0.0']);
   });
 
   it('ignores || ranges', () => {
@@ -111,5 +119,25 @@ describe('dependenciesToRequires', () => {
   it('ignores invalid versions', () => {
     var invalid = {'foo': 'a.b.c'};
     assert.deepEqual(d2r(invalid), ['npm(foo)']);
+  });
+});
+
+describe('generateSpecFile with the bundle template', () => {
+  const npmModule = {name: 'demo', version: '1.0.0', description: 'Demo.', license: 'MIT', bin: {}};
+  const deps = [
+    ['demo', '1.0.0', 'https://registry.npmjs.org/demo/-/demo-1.0.0.tgz'],
+    ['@babel/preset-modules', '0.1.6-no-external-plugins',
+     'https://registry.npmjs.org/@babel/preset-modules/-/preset-modules-0.1.6-no-external-plugins.tgz']
+  ];
+  const spec = specFileGenerator(npmModule, ['package.json'], deps, 1,
+                                 path.join(__dirname, '..', 'bundle.mustache'), false);
+
+  it('writes RPM versions in bundled Provides', () => {
+    assert.ok(spec.includes('Provides: bundled(npm(@babel/preset-modules)) = 0.1.6~no_external_plugins\n'), spec);
+    assert.ok(spec.includes('Provides: bundled(npm(demo)) = 1.0.0\n'), spec);
+  });
+
+  it('keeps the npm version in the Source URL', () => {
+    assert.ok(spec.includes('/preset-modules-0.1.6-no-external-plugins.tgz\n'), spec);
   });
 });

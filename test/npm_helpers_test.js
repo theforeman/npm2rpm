@@ -48,3 +48,40 @@ describe('getCacheFilename', () => {
     assert.equal(filename, 'foo-%{version}-registry.npmjs.org.tgz');
   });
 });
+
+describe('rpmVersion', () => {
+  const rpmVersion = npmHelpers.rpmVersion;
+
+  it('leaves a release version alone', () => {
+    assert.equal(rpmVersion('7.29.14'), '7.29.14');
+  });
+
+  it('maps the prerelease separator to a tilde', () => {
+    assert.equal(rpmVersion('1.0.0-beta.2'), '1.0.0~beta.2');
+  });
+
+  it('maps hyphens inside the prerelease to underscores', () => {
+    assert.equal(rpmVersion('7.21.0-placeholder-for-preset-env.2'), '7.21.0~placeholder_for_preset_env.2');
+    assert.equal(rpmVersion('0.1.6-no-external-plugins'), '0.1.6~no_external_plugins');
+  });
+
+  it('drops build metadata', () => {
+    assert.equal(rpmVersion('4.0.0+sha.abc'), '4.0.0');
+    assert.equal(rpmVersion('3.0.0-rc.1+build-5'), '3.0.0~rc.1');
+  });
+
+  it('keeps the case of prerelease identifiers', () => {
+    assert.equal(rpmVersion('5.0.0-Alpha.X1'), '5.0.0~Alpha.X1');
+  });
+
+  it('passes anything that is not a string through', () => {
+    assert.equal(rpmVersion(undefined), undefined);
+    assert.equal(rpmVersion(null), null);
+  });
+
+  it('never returns a hyphen for a valid semver version', () => {
+    ['1.0.0-0', '1.0.0--', '1.0.0-a-b-c.d-e', '1.0.0-x+y-z'].forEach((v) => {
+      assert.ok(!rpmVersion(v).includes('-'), v);
+    });
+  });
+});
