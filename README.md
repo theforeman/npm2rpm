@@ -71,6 +71,14 @@ In order to include these bundled dependencies, `npm2rpm` downloads all dependen
 
 You can circumvent this problem by generating the cache tar manually with all npm versions you want, then put it all in the same tarball. To generate the cache tarball on other npm versions, you can use the script `generate_npm_tarball.sh`. By default npm2rpm will generate a cache tarball with your default npm version, so you should only generate it manually if you want cache tarballs for multiple npm versions
 
+#### Prerelease versions
+
+npm versions follow semver, where a prerelease is written `1.0.0-beta.2`. RPM does not allow `-` in a version, so the versions `npm2rpm` writes into `Provides: bundled(npm(...))` and `Requires: npm(...)` are converted: the first `-` becomes `~` and any further `-` becomes `_` (`7.21.0-placeholder-for-preset-env.2` is written as `7.21.0~placeholder_for_preset_env.2`), and build metadata (`+...`) is dropped. A prerelease sorts before its release, as in semver; the order of two prereleases of the same release can differ from semver. Source URLs keep the npm version.
+
+A custom template (`-t`) gets both forms for each entry of `PROVIDES`: `{{{version}}}` is the npm version and `{{{rpm_version}}}` the converted one. Templates written before this change keep using `{{{version}}}` and should switch to `{{{rpm_version}}}` in `Provides`.
+
+Packaging a module whose own version is a prerelease is not supported: `Version:` is written as is.
+
 #### Putting your node_modules in a separate package
 If none of these two options were good for you, you can put your `node_modules` directory in a tar. Then unpack the module in a location known by your main application, and copy it from there. No other application in your system needs to even know your npm dependencies exist. Check out [an example here](https://github.com/dLobatog/foreman-packaging/blob/f71bc800c2f4bef5869edae5f6aa87e2a94f735d/foreman-node_modules/foreman-node_modules.spec).
 

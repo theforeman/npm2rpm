@@ -22,7 +22,7 @@ ExclusiveArch: %{nodejs_arches} noarch
 
 Provides: npm(%{npm_name}) = %{version}
 {{#each PROVIDES}}
-Provides: bundled(npm({{{name}}})) = {{{version}}}
+Provides: bundled(npm({{{name}}})) = {{{rpm_version}}}
 {{/each}}
 AutoReq: no
 AutoProv: no
